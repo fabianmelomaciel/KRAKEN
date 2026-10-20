@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<title>Visor IA</title>
+<style nonce="__VISOR_NONCE__">
+:root {
+  --fondo: #07090d;
+  --panel: #0d1117;
+  --linea: #1c2530;
+  --texto: #c7d3de;
+  --tenue: #6b7c8d;
+  --verde: #4ade80;
+  --ambar: #fbbf24;
+  --rojo: #f87171;
+  --azul: #60a5fa;
+  --sans: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.45;
+  /* clip y no hidden: hidden convierte al body en contenedor de scroll y
+     rompe el header sticky */
+  overflow-x: clip;
+  overflow-anchor: none;
+}
+
+body {
+  padding: 0 0 32px;
+}
+
+.barra {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 46px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--linea);
+  background: linear-gradient(180deg, #0b1016, var(--fondo));
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.marca { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+
+.marca h1 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #e8f0f7;
+}
+
+.marca span { color: var(--tenue); font-size: 12px; }
+
+.derecha { display: flex; align-items: center; gap: 12px; }
+
+.reloj { color: var(--tenue); font-size: 12px; }
+
+.luz {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 2px 8px;
+  border: 1px solid var(--linea);
+  border-radius: 3px;
+  color: var(--tenue);
+}
+
+.luz.l-vivo { color: var(--verde); border-color: #1f4d33; }
+.luz.l-degradado { color: var(--ambar); border-color: #4d3d1f; }
+.luz.l-sin-fuentes { color: var(--rojo); border-color: #4d2323; }
+
+select {
+  background: var(--panel);
+  color: var(--texto);
+  border: 1px solid var(--linea);
+  border-radius: 3px;
+  font-family: var(--sans);
+  font-size: 12px;
+  padding: 3px 6px;
+}
+
+.tarjetas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1px;
+  background: var(--linea);
+  border-bottom: 1px solid var(--linea);
+}
+
+.tarjeta {
+  background: var(--panel);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tarjeta .etiqueta {
+  color: var(--tenue);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.tarjeta .valor {
+  color: #e8f0f7;
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tablero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 18px;
+  padding: 18px;
+  align-items: start;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.columna { min-width: 0; }
+
+.columna h2 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--tenue);
+  border-bottom: 1px solid var(--linea);
+  padding-bottom: 6px;
+}
+
+.lista { display: flex; flex-direction: column; gap: 8px; }
+
+.sesion {
+  background: var(--panel);
+  border: 1px solid var(--linea);
+  border-left: 2px solid var(--linea);
+  border-radius: 3px;
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sesion.e-activo { border-left-color: var(--verde); }
+.sesion.e-inactivo { border-left-color: var(--ambar); }
+.sesion.e-terminado { border-left-color: #33404d; opacity: 0.72; }
+
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: baseline;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.fila.tenue { color: var(--tenue); font-size: 12px; justify-content: flex-start; flex-wrap: wrap; }
+
+.titulo { color: #e8f0f7; min-width: 0; overflow-wrap: anywhere; }
+
+.estado {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--tenue);
+  white-space: nowrap;
+}
+
+.estado.es-activo { color: var(--verde); }
+.estado.es-inactivo { color: var(--ambar); }
+.estado.es-terminado { color: var(--tenue); }
+
+.proyecto { color: var(--azul); }
+.ide, .modelo, .agente { color: var(--tenue); }
+
+.barra {
+  height: 3px;
+  background: #151d26;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.barra .relleno { height: 100%; background: var(--verde); }
+.barra.actividad .relleno { width: 35%; background: #2c6b48; }
+
+.pie { color: var(--tenue); font-size: 11px; }
+
+.proyectos { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+
+.proyectos li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 5px 8px;
+  background: var(--panel);
+  border: 1px solid var(--linea);
+  border-radius: 3px;
+  font-size: 12px;
+  min-width: 0;
+}
+
+.pnombre { color: var(--azul); overflow-wrap: anywhere; }
+.pcuenta { color: var(--tenue); font-variant-numeric: tabular-nums; }
+
+.vacio { color: var(--tenue); font-size: 13px; padding: 14px 2px; }
+
+.aviso {
+  margin-top: 10px;
+  color: var(--ambar);
+  font-size: 12px;
+  border: 1px solid #3d3318;
+  background: #17140c;
+  border-radius: 3px;
+  padding: 7px 9px;
+}
+
+[hidden] { display: none !important; }
+
+/* Portrait: una sola columna, sin scroll horizontal. */
+@media (max-width: 820px) {
+  body { font-size: 15px; }
+  .tablero { grid-template-columns: minmax(0, 1fr); padding: 12px; gap: 14px; }
+  .barra { padding: 11px 12px; position: static; min-height: 42px; }
+  .marca h1 { font-size: 15px; }
+  .tarjetas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tarjeta { padding: 8px 10px; }
+  .tarjeta .valor { font-size: 17px; }
+  .fila { flex-direction: column; align-items: flex-start; gap: 3px; }
+  .estado { order: -1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .barra.actividad .relleno { animation: latido 2.4s ease-in-out infinite; }
+}
+
+@keyframes latido {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.9; }
+}
+</style>
+</head>
+<body>
+<header class="barra">
+  <div class="marca">
+    <h1 id="titulo">Visor IA</h1>
+    <span id="subtitulo"></span>
+  </div>
+  <div class="derecha">
+    <span id="reloj" class="reloj"></span>
+    <span id="luz" class="luz"></span>
+    <label class="reloj" id="et-idioma" for="idioma">Idioma</label>
+    <select id="idioma" aria-label="Idioma"></select>
+  </div>
+</header>
+
+<section class="tarjetas">
+  <div class="tarjeta"><span class="etiqueta" id="et-activas">Activas</span><span class="valor" id="st-activas">0</span></div>
+  <div class="tarjeta"><span class="etiqueta" id="et-terminadas">Terminadas</span><span class="valor" id="st-terminadas">0</span></div>
+  <div class="tarjeta"><span class="etiqueta" id="et-agentes">Agentes</span><span class="valor" id="st-agentes">0</span></div>
+  <div class="tarjeta"><span class="etiqueta" id="et-tokens">Tokens</span><span class="valor" id="st-tokens">0</span></div>
+  <div class="tarjeta"><span class="etiqueta" id="et-costo">Costo</span><span class="valor" id="st-costo">$0</span></div>
+  <div class="tarjeta"><span class="etiqueta" id="et-plan">Plan</span><span class="valor" id="st-percent">—</span></div>
+</section>
+
+<main class="tablero">
+  <section class="columna">
+    <h2 id="titulo-activas">Activas</h2>
+    <div id="lista-activas" class="lista"></div>
+    <h2 id="titulo-terminadas" style="margin-top:18px">Terminadas</h2>
+    <div id="lista-terminadas" class="lista"></div>
+    <p id="vacio" class="vacio" hidden></p>
+  </section>
+  <aside class="columna">
+    <h2 id="titulo-proyectos">Proyectos</h2>
+    <ul id="proyectos" class="proyectos"></ul>
+    <p id="aviso" class="aviso" hidden></p>
+  </aside>
+</main>
+
+<script src="/i18n.js" nonce="__VISOR_NONCE__"></script>
+<script src="/panel.js" nonce="__VISOR_NONCE__"></script>
+</body>
+</html>

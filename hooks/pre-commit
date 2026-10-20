@@ -1,0 +1,14 @@
+#!/bin/sh
+# pre-commit — busca secretos en lo que se va a commitear.
+#
+# Se arma con:  git config core.hooksPath hooks
+#
+# Si gitleaks no está instalado, el commit sigue: es una red, no una reja.
+set -e
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "gitleaks no está instalado: me salto el chequeo"
+  exit 0
+fi
+
+gitleaks detect --no-banner --redact --staged --source . --exit-code 1

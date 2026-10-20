@@ -1,0 +1,43 @@
+{
+  "name": "visor-ia",
+  "version": "0.1.0",
+  "description": "Visor IA / AI Monitor: panel local para ver qué están haciendo tus agentes de código, en opencode y Claude Code.",
+  "license": "MIT",
+  "author": "Fabian Melomaciel",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fabianmelomaciel/visor-ia.git"
+  },
+  "homepage": "https://github.com/fabianmelomaciel/visor-ia#readme",
+  "bugs": {
+    "url": "https://github.com/fabianmelomaciel/visor-ia/issues"
+  },
+  "keywords": [
+    "opencode",
+    "claude-code",
+    "monitor",
+    "dashboard",
+    "ai-agents"
+  ],
+  "bin": {
+    "visor": "bin/visor.js"
+  },
+  "type": "commonjs",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "public/",
+    "README.md",
+    "README.en.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node test/visor.test.js",
+    "capturas": "node scripts/capturas.js"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
