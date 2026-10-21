@@ -1,4 +1,18 @@
-# Kraken
+<div align="center">
+
+# 🦑 Kraken
+
+### The live panel for your coding agents. · El panel en vivo de tus agentes de código.
+
+[![npm](https://img.shields.io/badge/npm-@fabianmelomaciel%2Fkraken-b6f36b?style=flat-square&color=0a1206&logo=npm)](https://www.npmjs.com/package/@fabianmelomaciel/kraken)
+[![License: MIT](https://img.shields.io/badge/license-MIT-b6f36b?style=flat-square&color=0a1206&logo=github)](LICENSE)
+[![Node](https://img.shields.io/badge/node-22.13%2B-b6f36b?style=flat-square&color=0a1206&logo=node.js)](https://nodejs.org)
+
+<img src="assets/hero-kraken.svg" width="900" alt="Kraken: el panel en vivo de tus agentes de codigo" />
+
+</div>
+
+---
 
 A local panel to watch, live, what your coding agents are up to. Active
 sessions on top, finished ones at the bottom, with tokens, cost, tools, diffs,
@@ -293,3 +307,9 @@ on finished sessions, the order, portrait, the i18n, the degradation without
 ## License
 
 MIT. [Versión en español](README.md).
+
+<div align="center">
+
+<img src="assets/star-card.svg" width="620" alt="Kraken en GitHub" />
+
+</div>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 240" width="900" height="240" role="img" aria-label="Kraken en GitHub">
+  <defs>
+    <radialGradient id="foco" cx="22%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#f5c518" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#0d0d0d" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="900" height="240" fill="#0d0d0d"/>
+  <rect width="900" height="240" fill="url(#foco)"/>
+
+  <g stroke="#f5c518" stroke-width="10" stroke-linejoin="round">
+    <polygon points="110,50 129,103 186,105 141,140 157,195 110,163 63,195 79,140 34,105 91,103"/>
+  </g>
+
+  <text x="240" y="104" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="26" fill="#f2f2f2">github.com/fabianmelomaciel/KRAKEN</text>
+  <text x="240" y="146" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="17" fill="#8f8f8f">el panel en vivo de tus agentes · nada sale de tu maquina</text>
+  <text x="240" y="190" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif" font-size="22" font-weight="700" letter-spacing="2" fill="#f5c518">DALE UNA ESTRELLA SI TE SIRVIÓ</text>
+</svg>
