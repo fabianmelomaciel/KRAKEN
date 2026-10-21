@@ -9,19 +9,22 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 const crypto = require('crypto');
-const { spawn } = require('child_process');
 const eventos = require('./eventos.js');
 const fuentes = require('./fuentes.js');
 const permisos = require('./permisos.js');
 const rutas = require('./rutas.js');
 const i18n = require('./i18n.js');
+const navegador = require('./navegador.js');
 
 const RAIZ = path.join(__dirname, '..');
 const PUBLICO = path.join(RAIZ, 'public');
 const HTML = path.join(PUBLICO, 'index.html');
 const PANEL_JS = path.join(PUBLICO, 'panel.js');
 const I18N_JS = path.join(__dirname, 'i18n.js');
-const PUERTO_POR_DEFECTO = 0;
+const PUERTO_POR_DEFECTO = 7317;
+// si el puerto pedido está tomado se prueban estos diez y, al final, uno
+// efímero: nunca se queda sin puerto
+const PUERTO_FALLBACKS = 10;
 const MAX_CLIENTES = 24;
 const MAX_BYTES_FRAME = 1572864;
 const VIVA_MS = 5 * 60 * 1000;
@@ -34,9 +37,13 @@ function leerArgs(argv) {
   const cfg = { puerto: PUERTO_POR_DEFECTO, host: '127.0.0.1', navegador: true, dir: null, lang: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
-    if (a === '--port' || a === '--puerto') cfg.puerto = Number(argv[++i]);
+    if (a === '--port' || a === '--puerto') {
+      const n = Number(argv[++i]);
+      if (Number.isInteger(n) && n >= 0 && n <= 65535) cfg.puerto = n;
+    }
     else if (a === '--host') cfg.host = String(argv[++i] || '127.0.0.1');
     else if (a === '--no-browser' || a === '--sin-navegador') cfg.navegador = false;
+    else if (a === '--con-navegador' || a === '--con-browser') cfg.navegador = true;
     else if (a === '--lang' || a === '--idioma') cfg.lang = String(argv[++i] || '');
     else if (a === '--dir') cfg.dir = argv[++i];
   }
@@ -444,13 +451,76 @@ function nonce() {
 }
 
 function plano(res, codigo, texto) {
-  res.writeHead(codigo, { 'Content-Type': 'text/plain; charset=utf-8', 'X-Content-Type-Options': 'nosniff' });
+  res.writeHead(codigo, {
+    'Content-Type': 'text/plain; charset=utf-8',
+    'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer',
+    'Cache-Control': 'no-store',
+  });
   res.end(texto);
 }
 
 function puertoActual() {
   const dir = server.address();
   return dir && dir.port ? dir.port : cfg.puerto;
+}
+
+// El pidfile es el candado: si no hay un visor vivo no hay puerto especial.
+function pidVivo() {
+  try {
+    const previo = JSON.parse(fs.readFileSync(path.join(dirEstado, 'visor.pid'), 'utf8'));
+    if (previo && previo.pid && vivo(previo.pid)) return previo.pid;
+  } catch { /* no hay pidfile */ }
+  return null;
+}
+
+// El puerto que quedó realmente: si hay un visor vivo en esta máquina, el que
+// dice el archivo del estado. Si no hay ninguno, el de por defecto.
+function puertoEfectivo() {
+  if (!pidVivo()) return PUERTO_POR_DEFECTO;
+  try {
+    const info = JSON.parse(fs.readFileSync(path.join(dirEstado, 'server-info'), 'utf8'));
+    if (info && Number.isInteger(info.port) && info.port > 0) return info.port;
+  } catch { /* no hay server-info */ }
+  return PUERTO_POR_DEFECTO;
+}
+
+// La lista de puertos a probar: el pedido, los diez siguientes al de por
+// defecto y, al final, uno efímero.
+function candidatosDePuerto(puerto) {
+  const lista = [];
+  if (Number.isInteger(puerto) && puerto > 0) lista.push(puerto);
+  for (let p = PUERTO_POR_DEFECTO + 1; p <= PUERTO_POR_DEFECTO + PUERTO_FALLBACKS; p++) {
+    if (!lista.includes(p)) lista.push(p);
+  }
+  lista.push(0);
+  return lista;
+}
+
+// Escuchar es ir probando: si el puerto está tomado se pasa al siguiente y se
+// avisa por consola. Un puerto ocupado nunca es motivo para morirse.
+function escucharEn(srv, candidatos, host, alListo, alFallar) {
+  let i = 0;
+  const intentar = () => {
+    const puerto = candidatos[i];
+    const alError = (err) => {
+      srv.removeListener('error', alError);
+      if (err && err.code === 'EADDRINUSE' && i + 1 < candidatos.length) {
+        const siguiente = candidatos[i + 1];
+        i += 1;
+        console.warn(`visor: el puerto ${puerto} está ocupado; pruebo con ${siguiente === 0 ? 'uno efímero' : siguiente}`);
+        setImmediate(intentar);
+        return;
+      }
+      if (alFallar) alFallar(err);
+    };
+    srv.once('error', alError);
+    srv.listen(puerto, host, () => {
+      srv.removeListener('error', alError);
+      if (alListo) alListo(srv.address().port);
+    });
+  };
+  intentar();
 }
 
 // DNS rebinding: si el Host no es el del panel, no se contesta.
@@ -474,7 +544,9 @@ function tokenDe(req, url) {
 }
 
 function autorizado(req, url, res) {
-  if (permisos.tokenValido(tokenDe(req, url)) && tokenDe(req, url) === TOKEN) return true;
+  const candidato = tokenDe(req, url);
+  // la comparación es en tiempo constante: el 401 tarda lo mismo que el 200
+  if (permisos.tokenValido(candidato) && permisos.mismoToken(candidato, TOKEN)) return true;
   plano(res, 401, '401');
   return false;
 }
@@ -486,6 +558,7 @@ function servirArchivo(res, archivo, tipo, csp) {
     'Content-Type': tipo,
     'Cache-Control': 'no-store',
     'X-Content-Type-Options': 'nosniff',
+    'Referrer-Policy': 'no-referrer',
   };
   if (csp) cabeceras['Content-Security-Policy'] = csp;
   res.writeHead(200, cabeceras);
@@ -543,6 +616,7 @@ async function manejar(req, res) {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'no-referrer',
       'Content-Security-Policy': csp,
     });
     if (req.method === 'HEAD') return res.end();
@@ -562,6 +636,7 @@ async function manejar(req, res) {
       'Content-Type': 'application/json; charset=utf-8',
       'Cache-Control': 'no-store',
       'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'no-referrer',
       ETag: `"${etag}"`,
     };
     if (String(req.headers['if-none-match'] || '').replace(/^W\//, '') === `"${etag}"`) {
@@ -578,10 +653,11 @@ async function manejar(req, res) {
     if (clientes.size >= MAX_CLIENTES) return plano(res, 503, 'demasiados clientes');
     res.writeHead(200, {
       'Content-Type': 'text/event-stream; charset=utf-8',
-      'Cache-Control': 'no-cache, no-transform',
+      'Cache-Control': 'no-store, no-transform',
       Connection: 'keep-alive',
       'X-Accel-Buffering': 'no',
       'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'no-referrer',
     });
     res.write('retry: 2000\n\n');
     clientes.add(res);
@@ -604,8 +680,24 @@ async function manejar(req, res) {
     const registro = eventos.escribirEvento(ev);
     aplicar(registro);
     pedirTick();
-    res.writeHead(201, { 'Content-Type': 'application/json; charset=utf-8', 'X-Content-Type-Options': 'nosniff' });
+    res.writeHead(201, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'X-Content-Type-Options': 'nosniff',
+      'Referrer-Policy': 'no-referrer',
+      'Cache-Control': 'no-store',
+    });
     return res.end(JSON.stringify({ ok: true, seq: registro.seq }));
+  }
+
+  // el favicon no existe: se contesta 204 y no se dice nada sobre qué rutas
+  // hay
+  if (ruta === '/favicon.ico') {
+    res.writeHead(204, {
+      'Cache-Control': 'no-store',
+      'Referrer-Policy': 'no-referrer',
+      'X-Content-Type-Options': 'nosniff',
+    });
+    return res.end();
   }
 
   return plano(res, 404, '404');
@@ -621,19 +713,13 @@ server.on('connection', (s) => {
 });
 let watcher = null;
 let reloj = null;
+let escuchando = false;
 
 function abrirNavegador(url) {
-  try {
-    if (process.platform === 'win32') {
-      spawn('cmd', ['/c', 'start', '', url], { detached: true, stdio: 'ignore' }).unref();
-    } else if (process.platform === 'darwin') {
-      spawn('open', [url], { detached: true, stdio: 'ignore' }).unref();
-    } else {
-      spawn('xdg-open', [url], { detached: true, stdio: 'ignore' }).unref();
-    }
-  } catch {
+  // la URL se valida antes de tocar el sistema y nunca pasa por un shell
+  navegador.abrir(url).catch(() => {
     // si no hay navegador, el humano usa la URL que queda impresa
-  }
+  });
 }
 
 function cerrar() {
@@ -683,7 +769,12 @@ function relojLoop() {
 
 function arrancar() {
   fs.mkdirSync(dirEstado, { recursive: true, mode: 0o700 });
-  tomarPid();
+  try {
+    tomarPid();
+  } catch (e) {
+    console.error(`visor: ${e.message}`);
+    process.exit(1);
+  }
   bombear();
   tick();
 
@@ -699,32 +790,43 @@ function arrancar() {
   reloj.unref();
 
   server.on('error', (err) => {
-    console.error(`visor: no pude escuchar en ${cfg.host}:${cfg.puerto} — ${err.message}`);
-    process.exit(1);
+    // los errores del listen los lleva escucharEn, que prueba el siguiente
+    // puerto: acá sólo se avisan los que pasan después de escuchar
+    if (escuchando) console.error(`visor: error del servidor — ${err.message}`);
   });
 
-  server.listen(cfg.puerto, cfg.host, () => {
-    const puerto = server.address().port;
+  escucharEn(server, candidatosDePuerto(cfg.puerto), cfg.host, (puerto) => {
+    escuchando = true;
     const url = `http://localhost:${puerto}`;
     // el token viaja en la query de la primera carga: el panel lo guarda en
-    // localStorage y de ahí en adelante va en el header.
-    const urlConToken = `${url}/?token=${TOKEN}${cfg.lang ? `&lang=${cfg.lang}` : ''}`;
+    // localStorage y de ahí en adelante va en el header. El idioma va en el
+    // fragmento, así la URL no lleva dos parámetros pegados con un "&".
+    const urlConToken = `${url}/?token=${TOKEN}${cfg.lang ? `#lang=${encodeURIComponent(cfg.lang)}` : ''}`;
     const info = {
       type: 'server-started',
+      pid: process.pid,
       port: puerto,
       host: cfg.host,
-      url: urlConToken,
+      url,
+      urlConToken,
       dir: dirEstado,
       archivo,
     };
     try {
       fs.writeFileSync(path.join(dirEstado, 'server-info'), `${JSON.stringify(info)}\n`, { mode: 0o600 });
     } catch { /* nada */ }
-    console.log(JSON.stringify(info));
+    // por consola sale la URL sin token: el token se pide con `visor url`
+    const publico = { ...info };
+    delete publico.urlConToken;
+    console.log(JSON.stringify(publico));
+    console.log('visor: la URL con token la da `visor url` (o `visor open` para abrirla)');
     if (cfg.host !== '127.0.0.1' && cfg.host !== 'localhost') {
       console.warn(`visor: escuchando en ${cfg.host} — el panel queda expuesto a la red.`);
     }
     if (cfg.navegador) abrirNavegador(urlConToken);
+  }, (err) => {
+    console.error(`visor: no pude escuchar en ${cfg.host} — ${err.message}`);
+    process.exit(1);
   });
 
   process.on('SIGINT', cerrar);
@@ -733,7 +835,12 @@ function arrancar() {
 
 module.exports = {
   server, snapshot, aplicar, leerArgs, armar, tick, estadoEventos, arrancar,
-  TOKEN, etagActual, urlConToken: () => `http://localhost:${puertoActual()}/?token=${TOKEN}`,
+  TOKEN, etagActual,
+  PUERTO_POR_DEFECTO,
+  candidatosDePuerto,
+  escucharEn,
+  puertoEfectivo,
+  urlConToken: () => `http://localhost:${puertoEfectivo()}/?token=${TOKEN}`,
 };
 
 if (require.main === module) {

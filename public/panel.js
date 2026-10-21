@@ -18,6 +18,7 @@
   let reloj = null;
   let ultimo = null;
   let scrollManual = false;
+  let avisoToken = null;
 
   const el = (id) => document.getElementById(id);
 
@@ -31,6 +32,28 @@
 
   function leer(clave) {
     try { return localStorage.getItem(clave); } catch { return null; }
+  }
+
+  function borrar(clave) {
+    try { localStorage.removeItem(clave); } catch { /* modo privado */ }
+  }
+
+  // El aviso del token vive aparte del de las fuentes: si falta el token no
+  // lo pisa el "degradado", y al revés.
+  function avisarToken(texto) {
+    avisoToken = texto;
+    const aviso = el('aviso');
+    if (aviso) {
+      aviso.hidden = false;
+      aviso.textContent = texto;
+    }
+  }
+
+  // El token que manda ya no sirve: se tira y se dice qué hacer.
+  function tokenRechazado() {
+    token = null;
+    borrar(CLAVE_TOKEN);
+    avisarToken(t('tokenInvalido'));
   }
 
   // La primera carga trae el token en la query: se guarda y se saca de la
@@ -54,6 +77,15 @@
     try {
       deUrl = new URL(location.href).searchParams.get('lang');
     } catch { /* sin location */ }
+    // el idioma puede venir en el fragmento: así la URL no lleva dos
+    // parámetros pegados con un "&"
+    if (!deUrl) {
+      try {
+        const hash = String(location.hash || '').replace(/^#/, '');
+        const m = hash.match(/(?:^|&)lang=([^&]+)/);
+        if (m) deUrl = decodeURIComponent(m[1]);
+      } catch { /* sin hash */ }
+    }
     if (deUrl && i18n.IDIOMAS.includes(deUrl)) {
       guardar(CLAVE_LANG, deUrl);
       return deUrl;
@@ -196,13 +228,13 @@
       const malos = ['opencode', 'claude']
         .map((k) => snap.fuentes && snap.fuentes[k])
         .filter((f) => f && !f.ok);
-      if (malos.length) {
-        aviso.hidden = false;
-        aviso.textContent = malos.map((f) => (f.codigo && i18n.TRADUCCIONES[idioma][f.codigo]) || f.aviso).join(' · ');
-      } else {
-        aviso.hidden = true;
-        aviso.textContent = '';
+      const textos = [];
+      if (avisoToken) textos.push(avisoToken);
+      for (const f of malos) {
+        textos.push((f.codigo && i18n.TRADUCCIONES[idioma][f.codigo]) || f.aviso);
       }
+      aviso.hidden = textos.length === 0;
+      aviso.textContent = textos.join(' · ');
     }
 
     // El panel sube solo cuando el orden cambió, salvo que el humano haya
@@ -245,14 +277,24 @@
   // --- el transporte --------------------------------------------------------
 
   function pedirEstado() {
-    if (!token) return;
+    // sin token no se pide nada, pero tampoco se queda mudo: se avisa
+    if (!token) {
+      avisarToken(t('faltaToken'));
+      return;
+    }
     fetch('/api/state', { headers: { 'X-Visor-Token': token } })
-      .then((r) => (r.status === 200 ? r.json() : null))
+      .then((r) => {
+        if (r.status === 200) return r.json();
+        // el token viejo ya no sirve: se tira y se dice qué hacer
+        if (r.status === 401) tokenRechazado();
+        return null;
+      })
       .then((snap) => { if (snap) pintar(snap); })
       .catch(() => { /* el panel sigue con lo que tiene */ });
   }
 
   function abrirSse() {
+    if (!token) return;
     if (fuente) { try { fuente.close(); } catch { /* ya estaba */ } }
     fuente = new EventSource(`/api/events?token=${encodeURIComponent(token)}`);
     fuente.onmessage = (ev) => {
@@ -266,7 +308,8 @@
         reloj = setInterval(pedirEstado, POLL_MS);
         reloj.unref && reloj.unref();
       }
-      setTimeout(abrirSse, 5000);
+      // sin token no hay stream que reintentar: el polling va a avisar
+      if (token) setTimeout(abrirSse, 5000);
     };
   }
 
@@ -274,6 +317,8 @@
     token = tomarToken();
     idioma = tomarIdioma();
     pintarTextos();
+    // sin token el panel queda mudo: mejor un aviso que una pantalla vacía
+    if (!token) avisarToken(t('faltaToken'));
 
     const sel = el('idioma');
     if (sel) {

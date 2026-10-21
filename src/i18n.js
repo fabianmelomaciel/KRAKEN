@@ -36,6 +36,8 @@ const TRADUCCIONES = {
     sinBase: 'no está la base de opencode en esta máquina',
     sinTranscripts: 'no está la carpeta de transcripts de Claude Code',
     baseLectura: 'no pude abrir la base de opencode en sólo lectura',
+    faltaToken: 'Falta el token. Corré `visor open`',
+    tokenInvalido: 'El token no vale. Corré `visor open`',
   },
   en: {
     nombre: 'AI Monitor',
@@ -68,6 +70,8 @@ const TRADUCCIONES = {
     sinBase: 'the opencode database is not on this machine',
     sinTranscripts: 'the Claude Code transcripts folder is not on this machine',
     baseLectura: 'could not open the opencode database read-only',
+    faltaToken: 'Missing token. Run `visor open`',
+    tokenInvalido: 'The token is not valid. Run `visor open`',
   },
   pt: {
     nombre: 'Monitor IA',
@@ -100,6 +104,8 @@ const TRADUCCIONES = {
     sinBase: 'a base do opencode não está nesta máquina',
     sinTranscripts: 'a pasta de transcripts do Claude Code não está nesta máquina',
     baseLectura: 'não consegui abrir a base do opencode em somente leitura',
+    faltaToken: 'Falta o token. Rode `visor open`',
+    tokenInvalido: 'O token não vale. Rode `visor open`',
   },
 };
 

@@ -32,11 +32,11 @@ starts: it warns and keeps going with Claude Code and the events.
 visor serve
 ```
 
-It listens on `http://localhost:<port>` (ephemeral port by default) and opens
-the browser. The first load carries the token in the query string:
+It listens on `http://localhost:7317` (fixed port by default) and opens the
+browser. The first load carries the token in the query string:
 
 ```
-http://localhost:51998/?token=<128 bits in hex>
+http://localhost:7317/?token=<128 bits in hex>
 ```
 
 The panel stores it in `localStorage`, takes it out of the URL and from then
@@ -52,6 +52,53 @@ Flags: `--port N` (0 = ephemeral), `--host H`, `--no-browser`, `--lang es|en|pt`
 The panel only listens on `127.0.0.1` and validates the `Host`: anything but
 `127.0.0.1:<port>` or `localhost:<port>` gets a 403. With `--host` pointing
 somewhere else it warns on the console that it is exposed to the network.
+
+If 7317 is taken the panel tries 7318, and so on up to 7327: if those run out
+it falls back to an ephemeral port. It never ends up without a port and it
+never dies because a port was busy.
+
+## The URL and the token
+
+The 128 bit token never shows up on the console. The URL that carries it is
+asked for explicitly:
+
+```bash
+visor url      # prints the URL with the token
+visor open     # opens that URL in the browser
+```
+
+`visor url` builds the URL with the port that ended up listening and the token
+from the state file (mode 0600). `visor open` does the same and opens it: the
+URL is validated before touching the system (only `localhost` or `127.0.0.1`
+with a numeric port, no control characters) and it never goes through a shell.
+If the machine has no browser, `visor open` prints the URL and exits 0.
+
+## The autostart
+
+`visor autostart` makes the monitor start on login and, besides writing the
+file, it **activates** it on every system:
+
+| OS | What it writes | What it activates |
+| --- | --- | --- |
+| Windows | `VisorIA.cmd` in the Startup folder | the Startup folder runs it on the next login; the `.cmd` leaves a log in `autostart.log` |
+| macOS | `~/Library/LaunchAgents/io.visor-ia.plist` | `launchctl bootstrap` (and `bootout` on uninstall) |
+| Linux | `~/.config/systemd/user/io.visor-ia.service` | `systemctl --user daemon-reload` and `enable --now` (and `disable` on uninstall) |
+
+On macOS `KeepAlive` is on failure and on Linux `Restart=on-failure` with
+`RestartSec=5`: if the monitor crashes it comes back on its own. If the system
+command fails (permissions, no systemd), it warns on the console and keeps
+going.
+
+By default the autostart does **not** open the browser. The flag does:
+
+```bash
+visor autostart --con-navegador
+```
+
+On macOS and Linux the flag turns into the launcher option; on Windows the
+`.cmd` calls `visor open` after the monitor starts. To take it all back:
+`visor autostart --remove`. `visor doctor` tells you whether the autostart
+is installed **and** whether it is active on this machine.
 
 ## The three sources
 
@@ -73,7 +120,7 @@ visor emit --kind session.step --sid my-agent --src cursor --tool read
 or over HTTP:
 
 ```bash
-curl -X POST http://127.0.0.1:51998/api/event \
+curl -X POST http://127.0.0.1:7317/api/event \
   -H "X-Visor-Token: <the token>" \
   -H "Content-Type: application/json" \
   -d '{"kind":"session.step","sid":"my-agent","src":"cursor","tool":"read"}'
@@ -200,9 +247,11 @@ there.
 
 ```bash
 visor serve [--port N] [--host H] [--no-browser] [--lang es|en|pt]
+visor url
+visor open
 visor install-ide [--dry-run]
 visor uninstall [--keep-state]
-visor autostart [--remove]
+visor autostart [--remove] [--con-navegador]
 visor emit [--kind K] [--sid S] [--src X] [--title T] [--tool T] [--step N] [--total N] [--project P]
 visor doctor
 ```
@@ -221,8 +270,9 @@ shared machine it is a problem. `visor autostart --remove` undoes it.
 | `GET /api/events` | SSE with the snapshot when it changes |
 | `POST /api/event` | event ingestion |
 
-Any other route gets a 404. The SSE sends the full snapshot to every new
-client and then only when something changed: **in idle there are no pushes**.
+Any other route gets a 404 (the favicon gets a 204: it does not exist and
+there is no need to say anything about it). The SSE sends the full snapshot to
+every new client and then only when something changed: **in idle there are no pushes**.
 If the SSE drops, the panel falls back to polling `/api/state`.
 
 The clock adapts: with activity it reads every 3 seconds, idle every 30. A

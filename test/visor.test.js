@@ -160,9 +160,15 @@ const IDS_DEL_PANEL = [
   'et-activas', 'et-terminadas', 'et-agentes', 'et-tokens', 'et-costo', 'et-plan', 'et-idioma',
 ];
 
-function cargarPanel(snapshot) {
+function cargarPanel(snapshot, opciones) {
+  const opts = opciones || {};
   const dom = domDeMentira(IDS_DEL_PANEL);
   const guardado = {};
+  if (opts.token) guardado['visor.token'] = opts.token;
+  const estado = opts.status || 200;
+  // en el HTML de verdad el aviso arranca escondido
+  const aviso = dom.porId.get('aviso');
+  if (aviso) aviso.hidden = true;
   const contexto = {
     document: {
       getElementById: (id) => dom.porId.get(id) || null,
@@ -190,16 +196,17 @@ function cargarPanel(snapshot) {
     localStorage: {
       getItem: (k) => (k in guardado ? guardado[k] : null),
       setItem: (k, v) => { guardado[k] = String(v); },
+      removeItem: (k) => { delete guardado[k]; },
     },
     window: { scrollY: 0, scrollTo: () => {}, addEventListener: () => {} },
-    fetch: () => Promise.resolve({ status: 200, json: () => Promise.resolve(snapshot) }),
+    fetch: () => Promise.resolve({ status: estado, json: () => Promise.resolve(snapshot) }),
     EventSource: class { constructor() { this.close = () => {}; } },
     VisorI18n: require(path.join(SRC, 'i18n.js')),
   };
   contexto.globalThis = contexto;
   const codigo = fs.readFileSync(path.join(RAIZ, 'public', 'panel.js'), 'utf8');
   vm.runInNewContext(codigo, contexto, { filename: 'panel.js' });
-  return { dom, contexto };
+  return { dom, contexto, guardado };
 }
 
 // --- http -------------------------------------------------------------------
@@ -265,9 +272,22 @@ function esperar(ms) {
   check('el token son 128 bits en hex', /^[0-9a-f]{32}$/.test(token), token);
   check('el token es el mismo de la segunda vez', permisos.token() === token);
   check('el archivo del token existe con el modo 0600', fs.existsSync(permisos.archivoToken()));
+  check('el token se compara en tiempo constante', typeof permisos.mismoToken === 'function');
+  check('el token correcto pasa la comparación', permisos.mismoToken(token, token) === true);
+  check('un token distinto no pasa la comparación', permisos.mismoToken('a'.repeat(32), token) === false);
+  check('un token de otro largo no pasa la comparación', permisos.mismoToken('a'.repeat(16), token) === false);
+
+  console.log('\npuerto');
+  const servidorMod = require(path.join(SRC, 'servidor.js'));
+  check('el puerto por defecto es 7317', servidorMod.PUERTO_POR_DEFECTO === 7317, String(servidorMod.PUERTO_POR_DEFECTO));
+  check('sin flags el puerto es el de por defecto', servidorMod.leerArgs([]).puerto === 7317);
+  check('--port pisa el de por defecto', servidorMod.leerArgs(['--port', '8080']).puerto === 8080);
+  check('--port 0 deja el puerto efímero', servidorMod.leerArgs(['--port', '0']).puerto === 0);
+  check('los candidatos siguen al 7317', servidorMod.candidatosDePuerto(7317)[1] === 7318);
+  check('los candidatos terminan en uno efímero', servidorMod.candidatosDePuerto(7317).pop() === 0);
+  check('la lista de candidatos tiene doce entradas', servidorMod.candidatosDePuerto(7317).length === 12, String(servidorMod.candidatosDePuerto(7317).length));
 
   console.log('\nsnapshot');
-  const servidorMod = require(path.join(SRC, 'servidor.js'));
   servidor = servidorMod;
   await new Promise((r) => servidorMod.server.listen(0, '127.0.0.1', r));
   const puerto = servidorMod.server.address().port;
@@ -326,6 +346,21 @@ function esperar(ms) {
   const otro = await pedir('/api/state');
   check('la respuesta no filtra el token', !otro.cuerpo.includes(token));
 
+  console.log('\ncabeceras, favicon y 404');
+  check('la respuesta con token trae Referrer-Policy', conToken.headers['referrer-policy'] === 'no-referrer', String(conToken.headers['referrer-policy']));
+  check('la respuesta con token no se cachea', /no-store/.test(String(conToken.headers['cache-control'])), String(conToken.headers['cache-control']));
+  check('el 401 también dice no-referrer', sinToken.headers['referrer-policy'] === 'no-referrer', String(sinToken.headers['referrer-policy']));
+  const favicon = await pedir('/favicon.ico');
+  check('/favicon.ico da 204', favicon.status === 204, `dio ${favicon.status}`);
+  const inventada = await pedir('/ruta-que-no-existe');
+  check('una ruta que no existe da 404', inventada.status === 404, `dio ${inventada.status}`);
+  check('el 404 no dice qué rutas existen', !/api|state|events|panel|favicon/i.test(inventada.cuerpo), inventada.cuerpo);
+  check('el 404 no filtra el token', !inventada.cuerpo.includes(token));
+  const apiInventada = await pedir('/api/no-existe', { 'X-Visor-Token': token });
+  check('una ruta de api que no existe da 404', apiInventada.status === 404, `dio ${apiInventada.status}`);
+  const apiSinToken = await pedir('/api/no-existe');
+  check('una ruta de api sin token da 401 y no 404', apiSinToken.status === 401, `dio ${apiSinToken.status}`);
+
   console.log('\netag');
   const etag = conToken.headers.etag;
   check('la respuesta trae ETag', !!etag, String(etag));
@@ -355,6 +390,12 @@ function esperar(ms) {
   check('el ?lang gana de la detección', i18n.detectar('pt-BR', 'en') === 'en');
   check('sin dato, español', i18n.detectar('de-DE', null) === 'es');
   check('la etiqueta de terminado se traduce', i18n.t('en', 'terminado') === 'finished');
+  check('las tres tablas tienen las mismas claves', i18n.IDIOMAS.every((id) => Object.keys(i18n.TRADUCCIONES[id]).sort().join(',') === Object.keys(i18n.TRADUCCIONES.es).sort().join(',')));
+  check('la clave faltaToken está en los tres idiomas', i18n.IDIOMAS.every((id) => typeof i18n.TRADUCCIONES[id].faltaToken === 'string'));
+  check('la clave tokenInvalido está en los tres idiomas', i18n.IDIOMAS.every((id) => typeof i18n.TRADUCCIONES[id].tokenInvalido === 'string'));
+  check('el aviso del token en español', i18n.t('es', 'faltaToken') === 'Falta el token. Corré `visor open`', i18n.t('es', 'faltaToken'));
+  check('el aviso del token en inglés', i18n.t('en', 'faltaToken') === 'Missing token. Run `visor open`', i18n.t('en', 'faltaToken'));
+  check('el aviso del token en portugués', i18n.t('pt', 'faltaToken') === 'Falta o token. Rode `visor open`', i18n.t('pt', 'faltaToken'));
 
   console.log('\nel panel');
   const { dom, contexto } = cargarPanel(snap);
@@ -368,6 +409,22 @@ function esperar(ms) {
   check('el panel no mete html crudo', !/\.innerHTML\s*=/.test(fs.readFileSync(path.join(RAIZ, 'public', 'panel.js'), 'utf8')));
   check('el panel traduce el estado', paint.etiquetaEstado({ estado: 'terminado' }) === 'terminado');
   check('el panel traduce el reposo', /sin actividad/i.test(paint.etiquetaEstado({ estado: 'inactivo', minutos: 7 })));
+
+  console.log('\nel panel sin token');
+  const sinTokenPanel = cargarPanel(snap, {});
+  const avisoSinToken = sinTokenPanel.dom.porId.get('aviso');
+  check('sin token el panel se queja', avisoSinToken.textContent !== '', "el aviso quedó vacío");
+  check('sin token el aviso dice qué hacer', /visor open/.test(avisoSinToken.textContent), avisoSinToken.textContent);
+  check('sin token el aviso sale a la vista', avisoSinToken.hidden === false);
+  check('sin token el aviso está traducido', avisoSinToken.textContent === i18n.t('es', 'faltaToken'), avisoSinToken.textContent);
+
+  console.log('\nel panel con un 401');
+  const con401 = cargarPanel(snap, { token: 'a'.repeat(32), status: 401 });
+  await esperar(50);
+  const aviso401 = con401.dom.porId.get('aviso');
+  check('un 401 deja el aviso a la vista', aviso401.hidden === false);
+  check('un 401 cambia el aviso', aviso401.textContent !== '' && aviso401.textContent !== i18n.t('es', 'faltaToken'), aviso401.textContent);
+  check('un 401 borra el token viejo', !('visor.token' in con401.guardado), JSON.stringify(con401.guardado));
 
   console.log('\ndegradación sin node:sqlite');
   try {
@@ -425,6 +482,21 @@ function esperar(ms) {
   check('el evento emitido queda en el JSONL',
     fs.readFileSync(path.join(ESTADO, 'events.jsonl'), 'utf8').includes('ses-cli-1'));
 
+  console.log('\nla CLI: url y open');
+  const urlCmd = spawnSync(process.execPath, [path.join(RAIZ, 'bin', 'visor.js'), 'url'], {
+    encoding: 'utf8',
+    env: { ...process.env, VISOR_ESTADO_DIR: ESTADO },
+  });
+  check('visor url sale con 0', urlCmd.status === 0, urlCmd.stderr);
+  check('visor url devuelve una URL con token', /^http:\/\/(localhost|127\.0\.0\.1):\d+\/\?token=[0-9a-f]{32}$/.test(urlCmd.stdout.trim()), urlCmd.stdout);
+  check('el token de la URL es el del estado', urlCmd.stdout.includes(token));
+  const openCmd = spawnSync(process.execPath, [path.join(RAIZ, 'bin', 'visor.js'), 'open'], {
+    encoding: 'utf8',
+    env: { ...process.env, VISOR_ESTADO_DIR: ESTADO, VISOR_ABRIR: '0' },
+  });
+  check('visor open sale con 0', openCmd.status === 0, openCmd.stderr);
+  check('visor open imprime la URL', /token=[0-9a-f]{32}/.test(openCmd.stdout), openCmd.stdout);
+
   console.log('\nla rotación del JSONL');
   const eventosRot = require(path.join(SRC, 'eventos.js'));
   const grande = path.join(TMP, 'eventos-grandes.jsonl');
@@ -434,6 +506,32 @@ function esperar(ms) {
   check('el JSONL del estado no se infla', fs.statSync(path.join(ESTADO, 'events.jsonl')).size < 1024 * 1024);
   check('la rotación está implementada', eventosRot.TAMANO_MAX === 5 * 1024 * 1024 && eventosRot.COPIAS === 3);
   check('el archivo grande de la prueba no se toco', fs.statSync(grande).size === antes);
+
+  console.log('\nel salto de puerto');
+  const ocupante = http.createServer();
+  let yaEstaba = false;
+  try {
+    await new Promise((r, j) => {
+      ocupante.once('error', j);
+      ocupante.listen(7317, '127.0.0.1', r);
+    });
+  } catch {
+    yaEstaba = true;
+  }
+  const propio = http.createServer();
+  const elegido = await new Promise((resolve, reject) => {
+    servidorMod.escucharEn(
+      propio,
+      servidorMod.candidatosDePuerto(7317),
+      '127.0.0.1',
+      (p) => resolve(p),
+      (e) => reject(e),
+    );
+  });
+  check('con el puerto tomado se prueba el siguiente', elegido !== 7317, `quedó en ${elegido}`);
+  check('el puerto que queda es 7318 o el siguiente', elegido === 7318 || elegido > 7318 || elegido === 0, `quedó en ${elegido}`);
+  try { propio.close(); } catch { /* ya estaba */ }
+  if (!yaEstaba) { try { ocupante.close(); } catch { /* ya estaba */ } }
 
   servidor.server.close();
   try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* el tmp se limpia solo */ }

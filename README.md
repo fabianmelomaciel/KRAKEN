@@ -32,11 +32,11 @@ avisa en el panel y sigue con Claude Code y con los eventos.
 visor serve
 ```
 
-Levanta en `http://localhost:<puerto>` (puerto efímero por defecto) y abre el
+Levanta en `http://localhost:7317` (puerto fijo por defecto) y abre el
 navegador. La primera carga lleva el token en la query:
 
 ```
-http://localhost:51998/?token=<128 bits en hex>
+http://localhost:7317/?token=<128 bits en hex>
 ```
 
 El panel lo guarda en `localStorage`, lo saca de la URL y de ahí en adelante
@@ -52,6 +52,53 @@ Flags: `--port N` (0 = efímero), `--host H`, `--no-browser`, `--lang es|en|pt`,
 El panel sólo escucha en `127.0.0.1` y valida el `Host`: si no es
 `127.0.0.1:<puerto>` o `localhost:<puerto>` contesta 403. Con `--host` para
 otra cosa avisa por consola que queda expuesto a la red.
+
+Si el 7317 está tomado el visor prueba con el 7318, y así hasta el 7327: si
+se agotan cae a un puerto efímero. Nunca se queda sin puerto y nunca se muere
+por un puerto ocupado.
+
+## La URL y el token
+
+El token de 128 bits no sale nunca por consola. La URL que lo lleva se pide
+explícitamente:
+
+```bash
+visor url      # imprime la URL con el token
+visor open     # abre esa URL en el navegador
+```
+
+`visor url` arma la URL con el puerto que quedó escuchando y el token del
+archivo de estado (modo 0600). `visor open` hace lo mismo y la abre: la URL
+se valida antes de tocar el sistema (sólo `localhost` o `127.0.0.1` con
+puerto numérico, sin caracteres de control) y nunca pasa por un intérprete
+de comandos. Si la máquina no tiene navegador, `visor open` imprime la URL y
+sale con 0.
+
+## El autostart
+
+`visor autostart` deja el visor arrancando solo al iniciar sesión y, además
+de escribir el archivo, **lo activa** en cada sistema:
+
+| SO | Qué escribe | Qué activa |
+| --- | --- | --- |
+| Windows | `VisorIA.cmd` en la carpeta Startup | la carpeta Startup lo corre en el próximo login; el `.cmd` deja un log en `autostart.log` |
+| macOS | `~/Library/LaunchAgents/io.visor-ia.plist` | `launchctl bootstrap` (y `bootout` al desinstalar) |
+| Linux | `~/.config/systemd/user/io.visor-ia.service` | `systemctl --user daemon-reload` y `enable --now` (y `disable` al desinstalar) |
+
+En macOS el `KeepAlive` es por fallo y en Linux `Restart=on-failure` con
+`RestartSec=5`: si el visor se cae, vuelve solo. Si el comando del sistema
+falla (permisos, systemd que no está), se avisa por consola y se sigue.
+
+Por defecto el autostart **no** abre el navegador. Con el flag sí:
+
+```bash
+visor autostart --con-navegador
+```
+
+En macOS y Linux el flag se traduce en la opción del launcher; en Windows el
+`.cmd` llama a `visor open` después de arrancar el visor. Para dar vuelta
+todo: `visor autostart --remove`. `visor doctor` dice si el autostart está
+instalado **y** si está activo en esta máquina.
 
 ## Las tres fuentes
 
@@ -73,7 +120,7 @@ visor emit --kind session.step --sid mi-agente --src cursor --tool read
 o por HTTP:
 
 ```bash
-curl -X POST http://127.0.0.1:51998/api/event \
+curl -X POST http://127.0.0.1:7317/api/event \
   -H "X-Visor-Token: <el token>" \
   -H "Content-Type: application/json" \
   -d '{"kind":"session.step","sid":"mi-agente","src":"cursor","tool":"read"}'
@@ -196,9 +243,11 @@ raíces que querés (una lista vacía deniega todo):
 
 ```bash
 visor serve [--port N] [--host H] [--no-browser] [--lang es|en|pt]
+visor url
+visor open
 visor install-ide [--dry-run]
 visor uninstall [--keep-state]
-visor autostart [--remove]
+visor autostart [--remove] [--con-navegador]
 visor emit [--kind K] [--sid S] [--src X] [--title T] [--tool T] [--step N] [--total N] [--project P]
 visor doctor
 ```
@@ -218,7 +267,8 @@ lo da vuelta.
 | `GET /api/events` | SSE con el snapshot cuando cambia |
 | `POST /api/event` | ingesta de un evento |
 
-Cualquier otra ruta da 404. El SSE manda el snapshot completo a cada cliente
+Cualquier otra ruta da 404 (el favicon da 204: no existe y no hace falta que
+diga nada). El SSE manda el snapshot completo a cada cliente
 nuevo y después sólo cuando algo cambió: **en reposo no hay pushes**. Si el
 SSE se cae, el panel cae a polling de `/api/state`.
 

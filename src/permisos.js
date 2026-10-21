@@ -113,12 +113,23 @@ function tokenValido(candidato) {
   return /^[0-9a-f]{32}$/.test(candidato);
 }
 
+// La comparación del token es en tiempo constante: que el 401 tarde lo mismo
+// que el 200 no le regala nada a quien está adivinando.
+function mismoToken(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const ba = Buffer.from(a, 'utf8');
+  const bb = Buffer.from(b, 'utf8');
+  if (ba.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ba, bb);
+}
+
 module.exports = {
   config,
   permitido,
   proyectoDe,
   token,
   tokenValido,
+  mismoToken,
   archivoConfig,
   archivoToken,
   normalizar,
