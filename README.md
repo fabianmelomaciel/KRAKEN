@@ -137,8 +137,10 @@ en ningún lado.
 
 ## La allowlist
 
-Por default la allowlist es **tu home**: se ve lo que pase por ahí y nada
-más. Para ajustarla, escribí `permisos.json` en la carpeta de configuración:
+Por default la allowlist está en **modo automático**: se ve lo que tus IDEs ya
+conocen, o sea los proyectos en los que trabajás, y nada más. Para
+restringirla, escribí `permisos.json` en la carpeta de configuración con las
+raíces que querés (una lista vacía deniega todo):
 
 | SO | Ruta |
 | --- | --- |

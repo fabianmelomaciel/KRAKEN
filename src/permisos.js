@@ -20,28 +20,47 @@ function archivoToken() {
   return path.join(rutas.estado(), 'token');
 }
 
-// Sin archivo de configuración la allowlist es el home del usuario: es lo
-// mínimo razonable para una herramienta de la máquina. Un archivo con
-// "raices": [] es explícito y deniega todo.
+// Sin archivo de configuración el visor entra en modo automático: se ven los
+// proyectos que los propios IDEs ya conocen, y nada más. Con archivo, el
+// modo es restringido: "raices": [] deniega todo, y con raíces, sólo esas.
+//
+// El archivo se cachea por mtime: se lo relee sólo cuando cambia, para no
+// leerlo una vez por sesión y por tick.
+let cacheConfig = null;
+
 function config() {
+  const archivo = archivoConfig();
+  let mtime = 0;
+  try {
+    mtime = fs.statSync(archivo).mtimeMs;
+  } catch {
+    mtime = 0;
+  }
+  if (cacheConfig && cacheConfig.mtime === mtime) return cacheConfig.valor;
   let crudo = null;
   try {
-    crudo = JSON.parse(fs.readFileSync(archivoConfig(), 'utf8'));
+    crudo = JSON.parse(fs.readFileSync(archivo, 'utf8'));
   } catch {
     crudo = null;
   }
+  let valor;
   if (!crudo || typeof crudo !== 'object' || Array.isArray(crudo)) {
-    return { raices: [rutas.home()], dias: DIAS_POR_DEFECTO, nivel: 'metadata' };
+    valor = { raices: null, modo: 'auto', dias: DIAS_POR_DEFECTO, nivel: 'metadata' };
+  } else {
+    const raices = Array.isArray(crudo.raices)
+      ? crudo.raices.filter((r) => typeof r === 'string' && r.trim())
+      : [];
+    valor = {
+      raices,
+      modo: 'restringido',
+      dias: Number.isFinite(crudo.dias) ? crudo.dias : DIAS_POR_DEFECTO,
+      nivel: typeof crudo.nivel === 'string' ? crudo.nivel : 'metadata',
+    };
   }
-  const raices = Array.isArray(crudo.raices)
-    ? crudo.raices.filter((r) => typeof r === 'string' && r.trim())
-    : [];
-  return {
-    raices,
-    dias: Number.isFinite(crudo.dias) ? crudo.dias : DIAS_POR_DEFECTO,
-    nivel: typeof crudo.nivel === 'string' ? crudo.nivel : 'metadata',
-  };
+  cacheConfig = { mtime, valor };
+  return valor;
 }
+
 
 function normalizar(ruta) {
   return String(ruta || '').replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase();
@@ -49,8 +68,12 @@ function normalizar(ruta) {
 
 function permitido(ruta) {
   if (!ruta) return false;
+  const { raices } = config();
+  // Modo automático: lo que el IDE trae es, por definición, un proyecto del
+  // usuario. El filtro fino lo hace el archivo de configuración.
+  if (raices === null) return true;
   const n = normalizar(ruta);
-  return config().raices.some((raiz) => {
+  return raices.some((raiz) => {
     const r = normalizar(raiz);
     if (!r) return false;
     return n === r || n.startsWith(`${r}/`);

@@ -255,6 +255,10 @@ function esperar(ms) {
   escribirConfig([FIXTURE]);
   check('con la raíz puesta, la ruta entra', permisos.permitido(PROYECTO));
   check('una ruta que empieza igual pero no es la raíz no entra', !permisos.permitido(`${FIXTURE}-otro`));
+  fs.rmSync(path.join(CONFIG, 'permisos.json'));
+  check('sin archivo de configuración el modo es automático', permisos.config().modo === 'auto');
+  check('en modo automático entra un proyecto que está fuera del home', permisos.permitido('C:\\proyectos\\otro-repo'));
+  escribirConfig([]);
 
   console.log('\ntoken');
   const token = permisos.token();

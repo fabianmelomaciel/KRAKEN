@@ -137,6 +137,11 @@ The HTML render is `textContent` and `createElement` only: there is no
 
 ## The allowlist
 
+The allowlist defaults to **auto mode**: you see the projects your IDEs already
+know — the ones you actually work in — and nothing else. To narrow it down,
+write `permisos.json` in the config folder with the roots you want (an empty
+list denies everything):
+
 By default the allowlist is **your home directory**: what lives under it is
 shown, nothing else. To tune it, write `permisos.json` in the config folder:
 
