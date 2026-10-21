@@ -1,11 +1,11 @@
-# AI Monitor
+# Kraken
 
 A local panel to watch, live, what your coding agents are up to. Active
 sessions on top, finished ones at the bottom, with tokens, cost, tools, diffs,
 checklists and subagents. Everything runs on your machine: the monitor reads
 what the IDEs already wrote and sends nothing anywhere.
 
-![The panel on desktop](docs/img/visor-desktop.png)
+![The panel on desktop](docs/img/kraken-desktop.png)
 
 It is a cross-platform product: Windows, macOS and Linux. Zero runtime
 dependencies, no telemetry, no update check, no `postinstall`.
@@ -13,13 +13,13 @@ dependencies, no telemetry, no update check, no `postinstall`.
 ## Install
 
 ```bash
-npm i -g git+https://github.com/fabianmelomaciel/visor-ia.git
+npm i -g git+https://github.com/fabianmelomaciel/kraken.git
 ```
 
 Or without installing anything:
 
 ```bash
-npx git+https://github.com/fabianmelomaciel/visor-ia.git serve
+npx git+https://github.com/fabianmelomaciel/kraken.git serve
 ```
 
 You need **Node 22.13 or newer**: the opencode database is read with
@@ -29,7 +29,7 @@ starts: it warns and keeps going with Claude Code and the events.
 ## Start
 
 ```bash
-visor serve
+kraken serve
 ```
 
 It listens on `http://localhost:7317` (fixed port by default) and opens the
@@ -43,7 +43,7 @@ The panel stores it in `localStorage`, takes it out of the URL and from then
 on sends it in the header. To pin a port:
 
 ```bash
-visor serve --port 8080
+kraken serve --port 8080
 ```
 
 Flags: `--port N` (0 = ephemeral), `--host H`, `--no-browser`, `--lang es|en|pt`,
@@ -63,26 +63,26 @@ The 128 bit token never shows up on the console. The URL that carries it is
 asked for explicitly:
 
 ```bash
-visor url      # prints the URL with the token
-visor open     # opens that URL in the browser
+kraken url      # prints the URL with the token
+kraken open     # opens that URL in the browser
 ```
 
-`visor url` builds the URL with the port that ended up listening and the token
-from the state file (mode 0600). `visor open` does the same and opens it: the
+`kraken url` builds the URL with the port that ended up listening and the token
+from the state file (mode 0600). `kraken open` does the same and opens it: the
 URL is validated before touching the system (only `localhost` or `127.0.0.1`
 with a numeric port, no control characters) and it never goes through a shell.
-If the machine has no browser, `visor open` prints the URL and exits 0.
+If the machine has no browser, `kraken open` prints the URL and exits 0.
 
 ## The autostart
 
-`visor autostart` makes the monitor start on login and, besides writing the
+`kraken autostart` makes the monitor start on login and, besides writing the
 file, it **activates** it on every system:
 
 | OS | What it writes | What it activates |
 | --- | --- | --- |
-| Windows | `VisorIA.cmd` in the Startup folder | the Startup folder runs it on the next login; the `.cmd` leaves a log in `autostart.log` |
-| macOS | `~/Library/LaunchAgents/io.visor-ia.plist` | `launchctl bootstrap` (and `bootout` on uninstall) |
-| Linux | `~/.config/systemd/user/io.visor-ia.service` | `systemctl --user daemon-reload` and `enable --now` (and `disable` on uninstall) |
+| Windows | `Kraken.cmd` in the Startup folder | the Startup folder runs it on the next login; the `.cmd` leaves a log in `autostart.log` |
+| macOS | `~/Library/LaunchAgents/io.kraken.plist` | `launchctl bootstrap` (and `bootout` on uninstall) |
+| Linux | `~/.config/systemd/user/io.kraken.service` | `systemctl --user daemon-reload` and `enable --now` (and `disable` on uninstall) |
 
 On macOS `KeepAlive` is on failure and on Linux `Restart=on-failure` with
 `RestartSec=5`: if the monitor crashes it comes back on its own. If the system
@@ -92,12 +92,12 @@ going.
 By default the autostart does **not** open the browser. The flag does:
 
 ```bash
-visor autostart --con-navegador
+kraken autostart --con-navegador
 ```
 
 On macOS and Linux the flag turns into the launcher option; on Windows the
-`.cmd` calls `visor open` after the monitor starts. To take it all back:
-`visor autostart --remove`. `visor doctor` tells you whether the autostart
+`.cmd` calls `kraken open` after the monitor starts. To take it all back:
+`kraken autostart --remove`. `kraken doctor` tells you whether the autostart
 is installed **and** whether it is active on this machine.
 
 ## The three sources
@@ -114,14 +114,14 @@ IDEs leave no readable data in a stable format, so the monitor does not
 guess. If your agent can expose events, send them yourself:
 
 ```bash
-visor emit --kind session.step --sid my-agent --src cursor --tool read
+kraken emit --kind session.step --sid my-agent --src cursor --tool read
 ```
 
 or over HTTP:
 
 ```bash
 curl -X POST http://127.0.0.1:7317/api/event \
-  -H "X-Visor-Token: <the token>" \
+  -H "X-Kraken-Token: <the token>" \
   -H "Content-Type: application/json" \
   -d '{"kind":"session.step","sid":"my-agent","src":"cursor","tool":"read"}'
 ```
@@ -132,22 +132,22 @@ does not say so, the panel says "idle for Xm" and never invents the end.
 
 ## Instrumenting the IDEs (opt-in)
 
-The monitor **does not touch your IDEs** by default. `visor install-ide` is
+The monitor **does not touch your IDEs** by default. `kraken install-ide` is
 for whoever wants the exact "it finished" signal and the live trigger:
 
 ```bash
-visor install-ide          # install
-visor install-ide --dry-run  # show what it would do
+kraken install-ide          # install
+kraken install-ide --dry-run  # show what it would do
 ```
 
 The installer does two things:
 
-1. copies the plugin to `~/.config/opencode/plugins/` (`visor-feed.js` plus
-   `visor-eventos.js`);
+1. copies the plugin to `~/.config/opencode/plugins/` (`kraken-feed.js` plus
+   `kraken-eventos.js`);
 2. merges the Claude Code hooks into `~/.claude/settings.json` (backup in
    `.bak`, never replaces what was there).
 
-It is idempotent: run it as many times as you want. And `visor uninstall`
+It is idempotent: run it as many times as you want. And `kraken uninstall`
 takes everything back: it removes the plugin, restores the hooks from the
 `.bak`, drops the autostart and clears the state (`--keep-state` leaves it).
 
@@ -194,9 +194,9 @@ shown, nothing else. To tune it, write `permisos.json` in the config folder:
 
 | OS | Path |
 | --- | --- |
-| Windows | `%APPDATA%\VisorIA\permisos.json` |
-| macOS | `~/Library/Application Support/VisorIA/permisos.json` |
-| Linux | `$XDG_CONFIG_HOME/visor-ia/permisos.json` (or `~/.config/visor-ia/permisos.json`) |
+| Windows | `%APPDATA%\Kraken\permisos.json` |
+| macOS | `~/Library/Application Support/Kraken/permisos.json` |
+| Linux | `$XDG_CONFIG_HOME/kraken/permisos.json` (or `~/.config/kraken/permisos.json`) |
 
 ```json
 {
@@ -212,7 +212,7 @@ shown, nothing else. To tune it, write `permisos.json` in the config folder:
 - `nivel`: `metadata` is the only implemented level. Prompt text is never
   exposed at any level.
 
-`visor doctor` tells you where everything is and whether the sources are
+`kraken doctor` tells you where everything is and whether the sources are
 there.
 
 ## Security
@@ -223,8 +223,8 @@ there.
   `PRAGMA query_only=1` and `busy_timeout`. The monitor never creates the
   database and never indexes it.
 - The HTML CSP carries a nonce per response and no `unsafe-inline`.
-- The state lives in the OS folder (`%LOCALAPPDATA%\VisorIA`,
-  `~/Library/Application Support/VisorIA`, `$XDG_STATE_HOME/visor-ia`).
+- The state lives in the OS folder (`%LOCALAPPDATA%\Kraken`,
+  `~/Library/Application Support/Kraken`, `$XDG_STATE_HOME/kraken`).
   **Never** in Documents, Desktop, Dropbox or iCloud.
 - `/api/events` caps at 24 clients and the frames have a byte cap.
 - The state directory is created with mode `700` and the files with `600`
@@ -241,25 +241,25 @@ there.
   with autodetection (`navigator.language`), `?lang=` and a selector in the
   bar.
 
-![The panel in portrait](docs/img/visor-portrait.png)
+![The panel in portrait](docs/img/kraken-portrait.png)
 
 ## The commands
 
 ```bash
-visor serve [--port N] [--host H] [--no-browser] [--lang es|en|pt]
-visor url
-visor open
-visor install-ide [--dry-run]
-visor uninstall [--keep-state]
-visor autostart [--remove] [--con-navegador]
-visor emit [--kind K] [--sid S] [--src X] [--title T] [--tool T] [--step N] [--total N] [--project P]
-visor doctor
+kraken serve [--port N] [--host H] [--no-browser] [--lang es|en|pt]
+kraken url
+kraken open
+kraken install-ide [--dry-run]
+kraken uninstall [--keep-state]
+kraken autostart [--remove] [--con-navegador]
+kraken emit [--kind K] [--sid S] [--src X] [--title T] [--tool T] [--step N] [--total N] [--project P]
+kraken doctor
 ```
 
-`visor autostart` makes the monitor start on login: Startup folder on
+`kraken autostart` makes the monitor start on login: Startup folder on
 Windows, a LaunchAgent on macOS, a `systemd --user` unit on Linux. **Always
 with `--no-browser`**: opening a tab on every login is a nuisance, and on a
-shared machine it is a problem. `visor autostart --remove` undoes it.
+shared machine it is a problem. `kraken autostart --remove` undoes it.
 
 ## Routes
 
@@ -282,7 +282,7 @@ and the JSONL rotates at 5 MB (three copies) resetting the offset.
 ## Test
 
 ```bash
-node test/visor.test.js
+node test/kraken.test.js
 ```
 
 It starts the server with invented fixture data — never with yours — and

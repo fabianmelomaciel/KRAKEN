@@ -51,7 +51,7 @@ function leerArgs(argv) {
 }
 
 const cfg = leerArgs(process.argv.slice(2));
-if (cfg.dir) process.env.VISOR_ESTADO_DIR = cfg.dir;
+if (cfg.dir) process.env.KRAKEN_ESTADO_DIR = cfg.dir;
 
 const archivo = eventos.archivoEventos();
 const dirEstado = path.dirname(archivo);
@@ -465,16 +465,16 @@ function puertoActual() {
   return dir && dir.port ? dir.port : cfg.puerto;
 }
 
-// El pidfile es el candado: si no hay un visor vivo no hay puerto especial.
+// El pidfile es el candado: si no hay un kraken vivo no hay puerto especial.
 function pidVivo() {
   try {
-    const previo = JSON.parse(fs.readFileSync(path.join(dirEstado, 'visor.pid'), 'utf8'));
+    const previo = JSON.parse(fs.readFileSync(path.join(dirEstado, 'kraken.pid'), 'utf8'));
     if (previo && previo.pid && vivo(previo.pid)) return previo.pid;
   } catch { /* no hay pidfile */ }
   return null;
 }
 
-// El puerto que quedó realmente: si hay un visor vivo en esta máquina, el que
+// El puerto que quedó realmente: si hay un kraken vivo en esta máquina, el que
 // dice el archivo del estado. Si no hay ninguno, el de por defecto.
 function puertoEfectivo() {
   if (!pidVivo()) return PUERTO_POR_DEFECTO;
@@ -508,7 +508,7 @@ function escucharEn(srv, candidatos, host, alListo, alFallar) {
       if (err && err.code === 'EADDRINUSE' && i + 1 < candidatos.length) {
         const siguiente = candidatos[i + 1];
         i += 1;
-        console.warn(`visor: el puerto ${puerto} está ocupado; pruebo con ${siguiente === 0 ? 'uno efímero' : siguiente}`);
+        console.warn(`kraken: el puerto ${puerto} está ocupado; pruebo con ${siguiente === 0 ? 'uno efímero' : siguiente}`);
         setImmediate(intentar);
         return;
       }
@@ -537,7 +537,7 @@ function origenPermitido(origen) {
 // El token puede ir en el header (lo usan fetch y la CLI) o en la query
 // (EventSource no puede mandar headers).
 function tokenDe(req, url) {
-  const header = req.headers['x-visor-token'];
+  const header = req.headers['x-kraken-token'];
   if (typeof header === 'string' && header.trim()) return header.trim();
   const q = url.searchParams.get('token');
   return q ? q.trim() : null;
@@ -599,7 +599,7 @@ async function manejar(req, res) {
     const cuerpo = leerHtml();
     if (!cuerpo) return plano(res, 500, 'falta index.html');
     const n = nonce();
-    const htmlFinal = cuerpo.replace(/__VISOR_NONCE__/g, n);
+    const htmlFinal = cuerpo.replace(/__KRAKEN_NONCE__/g, n);
     const csp = [
       "default-src 'none'",
       `script-src 'nonce-${n}'`,
@@ -723,7 +723,7 @@ function abrirNavegador(url) {
 }
 
 function cerrar() {
-  for (const nombre of ['server-info', 'visor.pid']) {
+  for (const nombre of ['server-info', 'kraken.pid']) {
     try { fs.rmSync(path.join(dirEstado, nombre), { force: true }); } catch { /* nada */ }
   }
   if (reloj) clearInterval(reloj);
@@ -738,14 +738,14 @@ function vivo(pid) {
   try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; }
 }
 
-// El pidfile hace de lock: si ya hay un visor vivo en esta máquina, el
+// El pidfile hace de lock: si ya hay un kraken vivo en esta máquina, el
 // segundo no abre ni un puerto.
 function tomarPid() {
-  const destino = path.join(dirEstado, 'visor.pid');
+  const destino = path.join(dirEstado, 'kraken.pid');
   try {
     const previo = JSON.parse(fs.readFileSync(destino, 'utf8'));
     if (previo && previo.pid && vivo(previo.pid)) {
-      throw new Error(`ya hay un visor corriendo (pid ${previo.pid})`);
+      throw new Error(`ya hay un kraken corriendo (pid ${previo.pid})`);
     }
   } catch (e) {
     if (e && String(e.message).startsWith('ya hay')) throw e;
@@ -761,7 +761,7 @@ function cadencia() {
 }
 
 function relojLoop() {
-  try { bombear(); } catch { /* un stat fallido no corta el visor */ }
+  try { bombear(); } catch { /* un stat fallido no corta el kraken */ }
   try { tick(); } catch { /* una fuente que falla tampoco */ }
   reloj = setTimeout(relojLoop, cadencia());
   reloj.unref();
@@ -772,7 +772,7 @@ function arrancar() {
   try {
     tomarPid();
   } catch (e) {
-    console.error(`visor: ${e.message}`);
+    console.error(`kraken: ${e.message}`);
     process.exit(1);
   }
   bombear();
@@ -780,7 +780,7 @@ function arrancar() {
 
   try {
     watcher = fs.watch(dirEstado, () => {
-      try { bombear(); } catch { /* un evento raro no corta el visor */ }
+      try { bombear(); } catch { /* un evento raro no corta el kraken */ }
     });
   } catch {
     // sin watch: el stat del reloj alcanza
@@ -792,7 +792,7 @@ function arrancar() {
   server.on('error', (err) => {
     // los errores del listen los lleva escucharEn, que prueba el siguiente
     // puerto: acá sólo se avisan los que pasan después de escuchar
-    if (escuchando) console.error(`visor: error del servidor — ${err.message}`);
+    if (escuchando) console.error(`kraken: error del servidor — ${err.message}`);
   });
 
   escucharEn(server, candidatosDePuerto(cfg.puerto), cfg.host, (puerto) => {
@@ -815,17 +815,17 @@ function arrancar() {
     try {
       fs.writeFileSync(path.join(dirEstado, 'server-info'), `${JSON.stringify(info)}\n`, { mode: 0o600 });
     } catch { /* nada */ }
-    // por consola sale la URL sin token: el token se pide con `visor url`
+    // por consola sale la URL sin token: el token se pide con `kraken url`
     const publico = { ...info };
     delete publico.urlConToken;
     console.log(JSON.stringify(publico));
-    console.log('visor: la URL con token la da `visor url` (o `visor open` para abrirla)');
+    console.log('kraken: la URL con token la da `kraken url` (o `kraken open` para abrirla)');
     if (cfg.host !== '127.0.0.1' && cfg.host !== 'localhost') {
-      console.warn(`visor: escuchando en ${cfg.host} — el panel queda expuesto a la red.`);
+      console.warn(`kraken: escuchando en ${cfg.host} — el panel queda expuesto a la red.`);
     }
     if (cfg.navegador) abrirNavegador(urlConToken);
   }, (err) => {
-    console.error(`visor: no pude escuchar en ${cfg.host} — ${err.message}`);
+    console.error(`kraken: no pude escuchar en ${cfg.host} — ${err.message}`);
     process.exit(1);
   });
 

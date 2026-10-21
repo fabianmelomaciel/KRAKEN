@@ -1,4 +1,4 @@
-// eventos.js — el formato que comparten el visor, el plugin de opencode, el
+// eventos.js — el formato que comparten el kraken, el plugin de opencode, el
 // hook de Claude Code y el Ralph Loop. Una línea JSON por evento y append-only:
 // varios procesos escriben a la vez sin pisarse.
 //
@@ -25,7 +25,7 @@ function archivoEventos() {
 }
 
 // El número de línea se cuenta sobre el archivo, no con un contador en disco:
-// entre dos procesos puede quedar repetido, pero el visor ordena por el orden
+// entre dos procesos puede quedar repetido, pero el kraken ordena por el orden
 // del archivo, así que no molesta.
 let cuenta = { archivo: null, bytes: 0, lineas: 0 };
 
@@ -89,7 +89,7 @@ function escribirEvento(ev) {
 }
 
 // El % del plan sale de un denominador real: los checkboxes del archivo de
-// tareas. Sin denominator la barra del visor es de actividad, no un número
+// tareas. Sin denominator la barra del kraken es de actividad, no un número
 // inventado.
 function contarChecks(archivo) {
   let contenido = '';
@@ -110,9 +110,9 @@ function tituloCorto(src, sid) {
 // El nombre real de la pestaña. En opencode sale del primer mensaje del
 // usuario, así que va recortado y con los espacios aplastados: alcanza para
 // reconocer la pestaña y no para leer el prompt entero. Se apaga con
-// VISOR_TITULOS=0.
+// KRAKEN_TITULOS=0.
 function titulosPermitidos() {
-  const v = process.env.VISOR_TITULOS;
+  const v = process.env.KRAKEN_TITULOS;
   return !(v === '0' || v === 'false' || v === 'no');
 }
 

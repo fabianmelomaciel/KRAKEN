@@ -20,7 +20,7 @@ function archivoToken() {
   return path.join(rutas.estado(), 'token');
 }
 
-// Sin archivo de configuración el visor entra en modo automático: se ven los
+// Sin archivo de configuración el kraken entra en modo automático: se ven los
 // proyectos que los propios IDEs ya conocen, y nada más. Con archivo, el
 // modo es restringido: "raices": [] deniega todo, y con raíces, sólo esas.
 //

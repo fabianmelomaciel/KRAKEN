@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // hook.js — el gancho de Claude Code. Lee el JSON que el IDE manda por stdin y
-// anexa una línea al JSONL del visor.
+// anexa una línea al JSONL del kraken.
 //
 // Va en node y no en bash a propósito: el bash del PATH en esta máquina es WSL
 // sin distro, y un hook que no arranca rompe la sesión.

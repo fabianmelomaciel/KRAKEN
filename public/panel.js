@@ -7,9 +7,9 @@
 (function () {
   'use strict';
 
-  const i18n = globalThis.VisorI18n;
-  const CLAVE_TOKEN = 'visor.token';
-  const CLAVE_LANG = 'visor.lang';
+  const i18n = globalThis.KrakenI18n;
+  const CLAVE_TOKEN = 'kraken.token';
+  const CLAVE_LANG = 'kraken.lang';
   const POLL_MS = 2000;
 
   let idioma = 'es';
@@ -282,7 +282,7 @@
       avisarToken(t('faltaToken'));
       return;
     }
-    fetch('/api/state', { headers: { 'X-Visor-Token': token } })
+    fetch('/api/state', { headers: { 'X-Kraken-Token': token } })
       .then((r) => {
         if (r.status === 200) return r.json();
         // el token viejo ya no sirve: se tira y se dice qué hacer

@@ -1,4 +1,4 @@
-// autostart.js — que el visor arranque solo al iniciar sesión, en los tres
+// autostart.js — que el kraken arranque solo al iniciar sesión, en los tres
 // sistemas. Sin navegador por defecto: abrir una pestaña en cada login es
 // una molestia, y en una máquina compartida es un problema. Con
 // --con-navegador sí se abre.
@@ -13,8 +13,8 @@ const os = require('os');
 const path = require('path');
 const { spawnSync } = require('child_process');
 
-const VISOR_JS = path.resolve(__dirname, '..', 'bin', 'visor.js');
-const ETIQUETA = 'io.visor-ia';
+const KRAKEN_JS = path.resolve(__dirname, '..', 'bin', 'kraken.js');
+const ETIQUETA = 'io.kraken';
 
 // El mismo puerto que usa el servidor.
 function puertoPorDefecto() {
@@ -27,7 +27,7 @@ function carpetaInicio() {
 }
 
 function archivoWindows() {
-  return path.join(carpetaInicio(), 'VisorIA.cmd');
+  return path.join(carpetaInicio(), 'Kraken.cmd');
 }
 
 function archivoMac() {
@@ -56,17 +56,17 @@ function cmdWindows({ navegador }) {
     '@echo off',
     'chcp 65001 >nul',
     'setlocal',
-    `set "VISOR_DIR=${estado}"`,
-    'set "VISOR_LOG=%VISOR_DIR%\\autostart.log"',
-    'if not exist "%VISOR_DIR%" mkdir "%VISOR_DIR%"',
-    'echo [%DATE% %TIME%] visor arranca >> "%VISOR_LOG%"',
-    `start "" /min "${process.execPath}" "${VISOR_JS}" serve --port ${puerto} --no-browser >> "%VISOR_LOG%" 2>&1`,
+    `set "KRAKEN_DIR=${estado}"`,
+    'set "KRAKEN_LOG=%KRAKEN_DIR%\\autostart.log"',
+    'if not exist "%KRAKEN_DIR%" mkdir "%KRAKEN_DIR%"',
+    'echo [%DATE% %TIME%] kraken arranca >> "%KRAKEN_LOG%"',
+    `start "" /min "${process.execPath}" "${KRAKEN_JS}" serve --port ${puerto} --no-browser >> "%KRAKEN_LOG%" 2>&1`,
   ];
   if (navegador) {
     // el panel se abre sólo cuando el servidor ya está escuchando
     lineas.push(
       'ping -n 4 127.0.0.1 >nul',
-      `start "" /min "${process.execPath}" "${VISOR_JS}" open >> "%VISOR_LOG%" 2>&1`,
+      `start "" /min "${process.execPath}" "${KRAKEN_JS}" open >> "%KRAKEN_LOG%" 2>&1`,
     );
   }
   lineas.push('endlocal', '');
@@ -79,7 +79,7 @@ function plistMac({ navegador }) {
   const puerto = puertoPorDefecto();
   const argumentos = [
     `    <string>${process.execPath}</string>`,
-    `    <string>${VISOR_JS}</string>`,
+    `    <string>${KRAKEN_JS}</string>`,
     '    <string>serve</string>',
     '    <string>--port</string>',
     `    <string>${puerto}</string>`,
@@ -116,10 +116,10 @@ function unidadLinux({ navegador }) {
   const puerto = puertoPorDefecto();
   const flags = navegador ? '' : ' --no-browser';
   return `[Unit]
-Description=Visor IA
+Description=Kraken
 
 [Service]
-ExecStart="${process.execPath}" "${VISOR_JS}" serve --port ${puerto}${flags}
+ExecStart="${process.execPath}" "${KRAKEN_JS}" serve --port ${puerto}${flags}
 Restart=on-failure
 RestartSec=5
 
@@ -155,7 +155,7 @@ function activarMac(destino) {
   correr('launchctl', ['bootout', objetivoMac()]);
   const r = correr('launchctl', ['bootstrap', `gui/${typeof process.getuid === 'function' ? process.getuid() : 0}`, destino]);
   if (!r.ok) {
-    console.warn(`visor: no pude activar el LaunchAgent (${r.motivo}). A mano: launchctl bootstrap ${objetivoMac()} "${destino}"`);
+    console.warn(`kraken: no pude activar el LaunchAgent (${r.motivo}). A mano: launchctl bootstrap ${objetivoMac()} "${destino}"`);
   }
   return r.ok;
 }
@@ -169,7 +169,7 @@ function activarLinux() {
   const recarga = correr('systemctl', ['--user', 'daemon-reload']);
   const activa = correr('systemctl', ['--user', 'enable', '--now', unidad]);
   if (!recarga.ok || !activa.ok) {
-    console.warn(`visor: no pude activar la unidad de systemd (${recarga.motivo || activa.motivo}). A mano: systemctl --user enable --now ${unidad}`);
+    console.warn(`kraken: no pude activar la unidad de systemd (${recarga.motivo || activa.motivo}). A mano: systemctl --user enable --now ${unidad}`);
   }
   return recarga.ok && activa.ok;
 }

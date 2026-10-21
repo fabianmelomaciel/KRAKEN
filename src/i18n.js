@@ -6,7 +6,7 @@
 
 const TRADUCCIONES = {
   es: {
-    nombre: 'Visor IA',
+    nombre: 'Kraken',
     subtitulo: 'qué están haciendo tus agentes',
     activas: 'Activas',
     terminadas: 'Terminadas',
@@ -20,7 +20,7 @@ const TRADUCCIONES = {
     terminado: 'terminado',
     sinActividad: 'sin actividad hace {n}m',
     vacio: 'No hay sesiones todavía.',
-    vacioAyuda: 'Abrí opencode o Claude Code, o mandá un evento con visor emit.',
+    vacioAyuda: 'Abrí opencode o Claude Code, o mandá un evento con kraken emit.',
     proyecto: 'proyecto',
     sesion: 'sesión',
     mensajes: 'mensajes',
@@ -36,11 +36,11 @@ const TRADUCCIONES = {
     sinBase: 'no está la base de opencode en esta máquina',
     sinTranscripts: 'no está la carpeta de transcripts de Claude Code',
     baseLectura: 'no pude abrir la base de opencode en sólo lectura',
-    faltaToken: 'Falta el token. Corré `visor open`',
-    tokenInvalido: 'El token no vale. Corré `visor open`',
+    faltaToken: 'Falta el token. Corré `kraken open`',
+    tokenInvalido: 'El token no vale. Corré `kraken open`',
   },
   en: {
-    nombre: 'AI Monitor',
+    nombre: 'Kraken',
     subtitulo: 'what your agents are up to',
     activas: 'Active',
     terminadas: 'Finished',
@@ -54,7 +54,7 @@ const TRADUCCIONES = {
     terminado: 'finished',
     sinActividad: 'idle for {n}m',
     vacio: 'No sessions yet.',
-    vacioAyuda: 'Open opencode or Claude Code, or push an event with visor emit.',
+    vacioAyuda: 'Open opencode or Claude Code, or push an event with kraken emit.',
     proyecto: 'project',
     sesion: 'session',
     mensajes: 'messages',
@@ -70,11 +70,11 @@ const TRADUCCIONES = {
     sinBase: 'the opencode database is not on this machine',
     sinTranscripts: 'the Claude Code transcripts folder is not on this machine',
     baseLectura: 'could not open the opencode database read-only',
-    faltaToken: 'Missing token. Run `visor open`',
-    tokenInvalido: 'The token is not valid. Run `visor open`',
+    faltaToken: 'Missing token. Run `kraken open`',
+    tokenInvalido: 'The token is not valid. Run `kraken open`',
   },
   pt: {
-    nombre: 'Monitor IA',
+    nombre: 'Kraken',
     subtitulo: 'o que os seus agentes estão fazendo',
     activas: 'Ativas',
     terminadas: 'Terminadas',
@@ -88,7 +88,7 @@ const TRADUCCIONES = {
     terminado: 'terminado',
     sinActividad: 'sem atividade há {n}m',
     vacio: 'Nenhuma sessão ainda.',
-    vacioAyuda: 'Abra o opencode ou o Claude Code, ou envie um evento com visor emit.',
+    vacioAyuda: 'Abra o opencode ou o Claude Code, ou envie um evento com kraken emit.',
     proyecto: 'projeto',
     sesion: 'sessão',
     mensajes: 'mensagens',
@@ -104,8 +104,8 @@ const TRADUCCIONES = {
     sinBase: 'a base do opencode não está nesta máquina',
     sinTranscripts: 'a pasta de transcripts do Claude Code não está nesta máquina',
     baseLectura: 'não consegui abrir a base do opencode em somente leitura',
-    faltaToken: 'Falta o token. Rode `visor open`',
-    tokenInvalido: 'O token não vale. Rode `visor open`',
+    faltaToken: 'Falta o token. Rode `kraken open`',
+    tokenInvalido: 'O token não vale. Rode `kraken open`',
   },
 };
 
@@ -136,5 +136,5 @@ const API = { TRADUCCIONES, IDIOMAS, detectar, t };
 if (typeof module === 'object' && module.exports) {
   module.exports = API;
 } else if (typeof globalThis !== 'undefined') {
-  globalThis.VisorI18n = API;
+  globalThis.KrakenI18n = API;
 }

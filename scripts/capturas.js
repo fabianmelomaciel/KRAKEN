@@ -14,13 +14,13 @@ const SALIDA = path.join(RAIZ, 'docs', 'img');
 const PUERTO = 51998;
 
 const FOTOS = [
-  { nombre: 'visor-desktop.png', ancho: 1600, alto: 1000 },
-  { nombre: 'visor-portrait.png', ancho: 430, alto: 930 },
+  { nombre: 'kraken-desktop.png', ancho: 1600, alto: 1000 },
+  { nombre: 'kraken-portrait.png', ancho: 430, alto: 930 },
 ];
 
 function navegador() {
   const candidatos = [];
-  if (process.env.VISOR_BROWSER) candidatos.push(process.env.VISOR_BROWSER);
+  if (process.env.KRAKEN_BROWSER) candidatos.push(process.env.KRAKEN_BROWSER);
   if (process.platform === 'win32') {
     const pf86 = process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)';
     const pf = process.env.ProgramFiles || 'C:\\Program Files';
@@ -44,7 +44,7 @@ function navegador() {
 // --- la fixture -------------------------------------------------------------
 
 function fixture() {
-  const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'visor-capturas-'));
+  const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'kraken-capturas-'));
   const estado = path.join(raiz, 'estado');
   const config = path.join(raiz, 'config');
   const proyecto = path.join(raiz, 'proyectos', 'tienda-web');
@@ -145,13 +145,13 @@ function baseOpencode(dir, proyecto, ahora) {
 // --- el server --------------------------------------------------------------
 
 function arrancarServidor(fx) {
-  const hijo = spawn(process.execPath, [path.join(RAIZ, 'bin', 'visor.js'), 'serve', '--port', String(PUERTO), '--no-browser'], {
+  const hijo = spawn(process.execPath, [path.join(RAIZ, 'bin', 'kraken.js'), 'serve', '--port', String(PUERTO), '--no-browser'], {
     env: {
       ...process.env,
-      VISOR_ESTADO_DIR: fx.estado,
-      VISOR_CONFIG_DIR: fx.config,
-      VISOR_OPENCODE_DIR: fx.opencode,
-      VISOR_CLAUDE_DIR: fx.claude,
+      KRAKEN_ESTADO_DIR: fx.estado,
+      KRAKEN_CONFIG_DIR: fx.config,
+      KRAKEN_OPENCODE_DIR: fx.opencode,
+      KRAKEN_CLAUDE_DIR: fx.claude,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -175,7 +175,7 @@ function arrancarServidor(fx) {
 async function capturar(exe, url, destino, ancho, alto) {
   if (typeof WebSocket !== 'function') throw new Error('este Node no tiene WebSocket');
   const port = 9400 + Math.floor(Math.random() * 500);
-  const perfil = fs.mkdtempSync(path.join(os.tmpdir(), 'visor-chrome-'));
+  const perfil = fs.mkdtempSync(path.join(os.tmpdir(), 'kraken-chrome-'));
   const hijo = spawn(exe, [
     '--headless=new', '--disable-gpu', '--no-sandbox', '--hide-scrollbars',
     `--remote-debugging-port=${port}`, `--user-data-dir=${perfil}`, 'about:blank',
@@ -236,7 +236,7 @@ function foto(exe, url, destino, ancho, alto) {
     '--disable-gpu',
     '--no-sandbox',
     '--hide-scrollbars',
-    `--user-data-dir=${path.join(os.tmpdir(), `visor-chrome-${path.basename(destino)}`)}`,
+    `--user-data-dir=${path.join(os.tmpdir(), `kraken-chrome-${path.basename(destino)}`)}`,
     `--window-size=${ancho},${alto}`,
     '--virtual-time-budget=6000',
     `--screenshot=${destino}`,
@@ -255,7 +255,7 @@ function foto(exe, url, destino, ancho, alto) {
 (async () => {
   const exe = navegador();
   if (!exe) {
-    console.error('no encontré Edge ni Chrome: instalá uno o apuntá VISOR_BROWSER al ejecutable');
+    console.error('no encontré Edge ni Chrome: instalá uno o apuntá KRAKEN_BROWSER al ejecutable');
     process.exit(2);
   }
   fs.mkdirSync(SALIDA, { recursive: true });
@@ -322,7 +322,7 @@ function pedirEstado(token, puerto) {
       host: '127.0.0.1',
       port: puerto,
       path: '/api/state',
-      headers: { 'X-Visor-Token': token },
+      headers: { 'X-Kraken-Token': token },
     }, (res) => {
       const trozos = [];
       res.on('data', (t) => trozos.push(t));

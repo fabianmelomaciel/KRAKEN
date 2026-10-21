@@ -1,11 +1,11 @@
-# Visor IA
+# Kraken
 
 Panel local para ver, en vivo, qué están haciendo tus agentes de código.
 Sesiones activas arriba, terminadas abajo, con tokens, costo, tools, diffs,
-checklists y subagentes. Todo corre en tu máquina: el visor lee lo que los
+checklists y subagentes. Todo corre en tu máquina: el kraken lee lo que los
 IDEs ya escribieron y no manda nada a ningún lado.
 
-![El panel en desktop](docs/img/visor-desktop.png)
+![El panel en desktop](docs/img/kraken-desktop.png)
 
 Es un producto cross-platform: Windows, macOS y Linux. Cero dependencias de
 runtime, sin telemetría, sin update-check, sin `postinstall`.
@@ -13,23 +13,23 @@ runtime, sin telemetría, sin update-check, sin `postinstall`.
 ## Instalar
 
 ```bash
-npm i -g git+https://github.com/fabianmelomaciel/visor-ia.git
+npm i -g git+https://github.com/fabianmelomaciel/kraken.git
 ```
 
 O sin instalar nada:
 
 ```bash
-npx git+https://github.com/fabianmelomaciel/visor-ia.git serve
+npx git+https://github.com/fabianmelomaciel/kraken.git serve
 ```
 
 Hace falta **Node 22.13 o más**: la base de opencode se lee con `node:sqlite`,
-que todavía es experimental. Con un Node más viejo el visor igual levanta:
+que todavía es experimental. Con un Node más viejo el kraken igual levanta:
 avisa en el panel y sigue con Claude Code y con los eventos.
 
 ## Arrancar
 
 ```bash
-visor serve
+kraken serve
 ```
 
 Levanta en `http://localhost:7317` (puerto fijo por defecto) y abre el
@@ -43,7 +43,7 @@ El panel lo guarda en `localStorage`, lo saca de la URL y de ahí en adelante
 lo manda en el header. Para tomar un puerto fijo:
 
 ```bash
-visor serve --port 8080
+kraken serve --port 8080
 ```
 
 Flags: `--port N` (0 = efímero), `--host H`, `--no-browser`, `--lang es|en|pt`,
@@ -53,7 +53,7 @@ El panel sólo escucha en `127.0.0.1` y valida el `Host`: si no es
 `127.0.0.1:<puerto>` o `localhost:<puerto>` contesta 403. Con `--host` para
 otra cosa avisa por consola que queda expuesto a la red.
 
-Si el 7317 está tomado el visor prueba con el 7318, y así hasta el 7327: si
+Si el 7317 está tomado el kraken prueba con el 7318, y así hasta el 7327: si
 se agotan cae a un puerto efímero. Nunca se queda sin puerto y nunca se muere
 por un puerto ocupado.
 
@@ -63,41 +63,41 @@ El token de 128 bits no sale nunca por consola. La URL que lo lleva se pide
 explícitamente:
 
 ```bash
-visor url      # imprime la URL con el token
-visor open     # abre esa URL en el navegador
+kraken url      # imprime la URL con el token
+kraken open     # abre esa URL en el navegador
 ```
 
-`visor url` arma la URL con el puerto que quedó escuchando y el token del
-archivo de estado (modo 0600). `visor open` hace lo mismo y la abre: la URL
+`kraken url` arma la URL con el puerto que quedó escuchando y el token del
+archivo de estado (modo 0600). `kraken open` hace lo mismo y la abre: la URL
 se valida antes de tocar el sistema (sólo `localhost` o `127.0.0.1` con
 puerto numérico, sin caracteres de control) y nunca pasa por un intérprete
-de comandos. Si la máquina no tiene navegador, `visor open` imprime la URL y
+de comandos. Si la máquina no tiene navegador, `kraken open` imprime la URL y
 sale con 0.
 
 ## El autostart
 
-`visor autostart` deja el visor arrancando solo al iniciar sesión y, además
+`kraken autostart` deja el kraken arrancando solo al iniciar sesión y, además
 de escribir el archivo, **lo activa** en cada sistema:
 
 | SO | Qué escribe | Qué activa |
 | --- | --- | --- |
-| Windows | `VisorIA.cmd` en la carpeta Startup | la carpeta Startup lo corre en el próximo login; el `.cmd` deja un log en `autostart.log` |
-| macOS | `~/Library/LaunchAgents/io.visor-ia.plist` | `launchctl bootstrap` (y `bootout` al desinstalar) |
-| Linux | `~/.config/systemd/user/io.visor-ia.service` | `systemctl --user daemon-reload` y `enable --now` (y `disable` al desinstalar) |
+| Windows | `Kraken.cmd` en la carpeta Startup | la carpeta Startup lo corre en el próximo login; el `.cmd` deja un log en `autostart.log` |
+| macOS | `~/Library/LaunchAgents/io.kraken.plist` | `launchctl bootstrap` (y `bootout` al desinstalar) |
+| Linux | `~/.config/systemd/user/io.kraken.service` | `systemctl --user daemon-reload` y `enable --now` (y `disable` al desinstalar) |
 
 En macOS el `KeepAlive` es por fallo y en Linux `Restart=on-failure` con
-`RestartSec=5`: si el visor se cae, vuelve solo. Si el comando del sistema
+`RestartSec=5`: si el kraken se cae, vuelve solo. Si el comando del sistema
 falla (permisos, systemd que no está), se avisa por consola y se sigue.
 
 Por defecto el autostart **no** abre el navegador. Con el flag sí:
 
 ```bash
-visor autostart --con-navegador
+kraken autostart --con-navegador
 ```
 
 En macOS y Linux el flag se traduce en la opción del launcher; en Windows el
-`.cmd` llama a `visor open` después de arrancar el visor. Para dar vuelta
-todo: `visor autostart --remove`. `visor doctor` dice si el autostart está
+`.cmd` llama a `kraken open` después de arrancar el kraken. Para dar vuelta
+todo: `kraken autostart --remove`. `kraken doctor` dice si el autostart está
 instalado **y** si está activo en esta máquina.
 
 ## Las tres fuentes
@@ -110,18 +110,18 @@ instalado **y** si está activo en esta máquina.
 
 **Fuentes oficiales: opencode y Claude Code.** Para Cursor, Antigravity y
 Copilot hay **contrato de ingesta**, no integración nativa: esos IDEs no
-dejan datos legibles en un formato estable, así que el visor no los adivina.
+dejan datos legibles en un formato estable, así que el kraken no los adivina.
 Si tu agente expone eventos, mandalos vos:
 
 ```bash
-visor emit --kind session.step --sid mi-agente --src cursor --tool read
+kraken emit --kind session.step --sid mi-agente --src cursor --tool read
 ```
 
 o por HTTP:
 
 ```bash
 curl -X POST http://127.0.0.1:7317/api/event \
-  -H "X-Visor-Token: <el token>" \
+  -H "X-Kraken-Token: <el token>" \
   -H "Content-Type: application/json" \
   -d '{"kind":"session.step","sid":"mi-agente","src":"cursor","tool":"read"}'
 ```
@@ -132,23 +132,23 @@ lo dicen, el panel dice "sin actividad hace Xm" y nunca inventa el fin.
 
 ## Instrumentar los IDEs (opt-in)
 
-El visor **no toca los IDEs** por default. `visor install-ide` es para quien
+El kraken **no toca los IDEs** por default. `kraken install-ide` es para quien
 quiera la señal exacta de "terminó" y el trigger en vivo:
 
 ```bash
-visor install-ide          # instala
-visor install-ide --dry-run  # muestra qué haría
+kraken install-ide          # instala
+kraken install-ide --dry-run  # muestra qué haría
 ```
 
 El instalador hace dos cosas:
 
-1. copia el plugin a `~/.config/opencode/plugins/` (`visor-feed.js` más
-   `visor-eventos.js`);
+1. copia el plugin a `~/.config/opencode/plugins/` (`kraken-feed.js` más
+   `kraken-eventos.js`);
 2. mergea los hooks de Claude Code en `~/.claude/settings.json` (backup en
    `.bak`, nunca reemplaza lo que estaba).
 
 Es idempotente: se puede correr de nuevo sin duplicar nada. Y
-`visor uninstall` da vuelta todo: saca el plugin, restaura el `.bak` de los
+`kraken uninstall` da vuelta todo: saca el plugin, restaura el `.bak` de los
 hooks, borra el autostart y limpia el estado (`--keep-state` lo deja).
 
 ### Hooks de Claude Code
@@ -191,9 +191,9 @@ raíces que querés (una lista vacía deniega todo):
 
 | SO | Ruta |
 | --- | --- |
-| Windows | `%APPDATA%\VisorIA\permisos.json` |
-| macOS | `~/Library/Application Support/VisorIA/permisos.json` |
-| Linux | `$XDG_CONFIG_HOME/visor-ia/permisos.json` (o `~/.config/visor-ia/permisos.json`) |
+| Windows | `%APPDATA%\Kraken\permisos.json` |
+| macOS | `~/Library/Application Support/Kraken/permisos.json` |
+| Linux | `$XDG_CONFIG_HOME/kraken/permisos.json` (o `~/.config/kraken/permisos.json`) |
 
 ```json
 {
@@ -209,7 +209,7 @@ raíces que querés (una lista vacía deniega todo):
 - `nivel`: `metadata` es el único valor implementado. El texto de los prompts
   no se expone en ningún nivel.
 
-`visor doctor` te dice dónde está cada cosa y si las fuentes están.
+`kraken doctor` te dice dónde está cada cosa y si las fuentes están.
 
 ## Seguridad
 
@@ -217,11 +217,11 @@ raíces que querés (una lista vacía deniega todo):
   (o con un token que no es el) la respuesta es 401. Vive en el archivo de
   estado, con modo 0600.
 - La base del IDE se abre **en sólo lectura**: `readOnly`,
-  `PRAGMA query_only=1` y `busy_timeout`. El visor nunca crea la base ni le
+  `PRAGMA query_only=1` y `busy_timeout`. El kraken nunca crea la base ni le
   crea índices.
 - La CSP del HTML lleva un nonce por respuesta y no lleva `unsafe-inline`.
-- El estado vive en la carpeta del SO (`%LOCALAPPDATA%\VisorIA`,
-  `~/Library/Application Support/VisorIA`, `$XDG_STATE_HOME/visor-ia`).
+- El estado vive en la carpeta del SO (`%LOCALAPPDATA%\Kraken`,
+  `~/Library/Application Support/Kraken`, `$XDG_STATE_HOME/kraken`).
   **Nunca** en Documents, Desktop, Dropbox ni iCloud.
 - `/api/events` tiene un tope de 24 clientes y los frames tienen tope de bytes.
 - El directorio del estado se crea con modo `700` y los archivos con `600`
@@ -237,25 +237,25 @@ raíces que querés (una lista vacía deniega todo):
 - El nombre del producto y los textos vienen en español, inglés y portugués,
   con autodetección (`navigator.language`), `?lang=` y un selector en la barra.
 
-![El panel en portrait](docs/img/visor-portrait.png)
+![El panel en portrait](docs/img/kraken-portrait.png)
 
 ## Los comandos
 
 ```bash
-visor serve [--port N] [--host H] [--no-browser] [--lang es|en|pt]
-visor url
-visor open
-visor install-ide [--dry-run]
-visor uninstall [--keep-state]
-visor autostart [--remove] [--con-navegador]
-visor emit [--kind K] [--sid S] [--src X] [--title T] [--tool T] [--step N] [--total N] [--project P]
-visor doctor
+kraken serve [--port N] [--host H] [--no-browser] [--lang es|en|pt]
+kraken url
+kraken open
+kraken install-ide [--dry-run]
+kraken uninstall [--keep-state]
+kraken autostart [--remove] [--con-navegador]
+kraken emit [--kind K] [--sid S] [--src X] [--title T] [--tool T] [--step N] [--total N] [--project P]
+kraken doctor
 ```
 
-`visor autostart` deja el visor arrancando solo al iniciar sesión: Startup en
+`kraken autostart` deja el kraken arrancando solo al iniciar sesión: Startup en
 Windows, un LaunchAgent en macOS, una unidad de systemd `--user` en Linux.
 **Siempre con `--no-browser`**: abrir una pestaña en cada login es una
-molestia, y en una máquina compartida es un problema. `visor autostart --remove`
+molestia, y en una máquina compartida es un problema. `kraken autostart --remove`
 lo da vuelta.
 
 ## Rutas
@@ -279,7 +279,7 @@ evento nuevo dispara el refresco a los 120 milisegundos. Los timers van con
 ## Test
 
 ```bash
-node test/visor.test.js
+node test/kraken.test.js
 ```
 
 Levanta el server con una fixture inventada —nunca con tus datos— y revisa el

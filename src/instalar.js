@@ -1,7 +1,7 @@
 // instalar.js — deja (y saca) la instrumentación de los IDEs.
 //
 // Son dos cosas opt-in: el plugin de opencode y los hooks de Claude Code.
-// Sin esto el visor sigue funcionando: lee las bases y los transcripts, pero
+// Sin esto el kraken sigue funcionando: lee las bases y los transcripts, pero
 // no sabe cuándo terminó una sesión y dice "sin actividad hace Xm".
 
 const fs = require('fs');
@@ -9,12 +9,12 @@ const os = require('os');
 const path = require('path');
 
 const RAIZ = path.join(__dirname, '..');
-const PLUGIN_FUENTE = path.join(__dirname, 'ide', 'opencode-plugin.mjs');
+const PLUGIN_FUENTE = path.join(__dirname, 'ide', 'kraken-plugin.mjs');
 const EVENTOS_FUENTE = path.join(__dirname, 'eventos.js');
-const HOOK_FUENTE = path.join(__dirname, 'ide', 'claude-hook.js');
+const HOOK_FUENTE = path.join(__dirname, 'ide', 'kraken-hook.js');
 
 const EVENTOS_HOOK = ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'Stop'];
-const MARCA_HOOK = 'claude-hook.js';
+const MARCA_HOOK = 'kraken-hook.js';
 
 function log(ok, texto) {
   console.log(`${ok ? 'ok  ' : 'skip'}  ${texto}`);
@@ -23,7 +23,7 @@ function log(ok, texto) {
 // El directorio global de opencode: el de la doc es ~/.config/opencode y en
 // Windows también puede estar en %APPDATA%. Se usa el que ya existe.
 function dirOpencode() {
-  if (process.env.VISOR_OPENCODE_DIR) return process.env.VISOR_OPENCODE_DIR;
+  if (process.env.KRAKEN_OPENCODE_DIR) return process.env.KRAKEN_OPENCODE_DIR;
   const candidatas = [];
   if (process.env.XDG_CONFIG_HOME) candidatas.push(path.join(process.env.XDG_CONFIG_HOME, 'opencode'));
   candidatas.push(path.join(os.homedir(), '.config', 'opencode'));
@@ -37,7 +37,7 @@ function dirOpencode() {
 }
 
 function archivoClaude() {
-  if (process.env.VISOR_CLAUDE_SETTINGS) return process.env.VISOR_CLAUDE_SETTINGS;
+  if (process.env.KRAKEN_CLAUDE_SETTINGS) return process.env.KRAKEN_CLAUDE_SETTINGS;
   return path.join(os.homedir(), '.claude', 'settings.json');
 }
 
@@ -51,8 +51,8 @@ function instalarPlugin(dryRun) {
     return;
   }
   const dir = destinoPlugin();
-  const plugin = path.join(dir, 'visor-feed.js');
-  const eventos = path.join(dir, 'visor-eventos.js');
+  const plugin = path.join(dir, 'kraken-feed.js');
+  const eventos = path.join(dir, 'kraken-eventos.js');
   if (dryRun) {
     log(true, `plugin de opencode -> ${plugin}`);
     log(true, `módulo de eventos -> ${eventos}`);
@@ -116,7 +116,7 @@ function instalarHooks(dryRun) {
 
 function desinstalarPlugin() {
   const dir = destinoPlugin();
-  for (const nombre of ['visor-feed.js', 'visor-eventos.js']) {
+  for (const nombre of ['kraken-feed.js', 'kraken-eventos.js']) {
     const p = path.join(dir, nombre);
     if (!fs.existsSync(p)) continue;
     try { fs.rmSync(p, { force: true }); log(true, `sacado ${p}`); } catch { log(false, `no pude sacar ${p}`); }
@@ -124,7 +124,7 @@ function desinstalarPlugin() {
 }
 
 // Si hay un .bak se restaura tal cual: es lo que el usuario tenía antes de
-// que el visor metiera la mano. Si no hay, se sacan sólo nuestras entradas.
+// que el kraken metiera la mano. Si no hay, se sacan sólo nuestras entradas.
 function desinstalarHooks() {
   const archivo = archivoClaude();
   const bak = `${archivo}.bak`;
@@ -143,7 +143,7 @@ function desinstalarHooks() {
   let config;
   try { config = JSON.parse(fs.readFileSync(archivo, 'utf8')); } catch { config = null; }
   if (!config || typeof config !== 'object' || !config.hooks) {
-    log(true, 'no había hooks del visor');
+    log(true, 'no había hooks del kraken');
     return;
   }
   for (const evento of Object.keys(config.hooks)) {
@@ -160,7 +160,7 @@ function desinstalarHooks() {
 }
 
 function desinstalar({ keepState } = {}) {
-  console.log('desinstalando el visor\n');
+  console.log('desinstalando el kraken\n');
   desinstalarPlugin();
   desinstalarHooks();
 
@@ -187,11 +187,11 @@ function desinstalar({ keepState } = {}) {
 }
 
 function instalar({ dryRun } = {}) {
-  console.log('instalando el visor en los IDEs\n');
+  console.log('instalando el kraken en los IDEs\n');
   instalarPlugin(dryRun);
   console.log('');
   instalarHooks(dryRun);
-  console.log('\nlisto. el panel se levanta con: visor serve');
+  console.log('\nlisto. el panel se levanta con: kraken serve');
 }
 
 module.exports = { instalar, desinstalar, dirOpencode, archivoClaude, destinoPlugin };

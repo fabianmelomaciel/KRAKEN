@@ -1,26 +1,27 @@
 {
-  "name": "visor-ia",
-  "version": "0.1.0",
-  "description": "Visor IA / AI Monitor: panel local para ver qué están haciendo tus agentes de código, en opencode y Claude Code.",
+  "name": "@fabianmelomaciel/kraken",
+  "version": "1.0.0",
+  "description": "Kraken: panel local para ver que estan haciendo tus agentes de codigo, en opencode y Claude Code.",
   "license": "MIT",
   "author": "Fabian Melomaciel",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fabianmelomaciel/visor-ia.git"
+    "url": "git+https://github.com/fabianmelacomiel/kraken.git"
   },
-  "homepage": "https://github.com/fabianmelomaciel/visor-ia#readme",
+  "homepage": "https://github.com/fabianmelacomiel/kraken#readme",
   "bugs": {
-    "url": "https://github.com/fabianmelomaciel/visor-ia/issues"
+    "url": "https://github.com/fabianmelacomiel/kraken/issues"
   },
   "keywords": [
     "opencode",
     "claude-code",
     "monitor",
     "dashboard",
-    "ai-agents"
+    "ai-agents",
+    "kraken"
   ],
   "bin": {
-    "visor": "bin/visor.js"
+    "kraken": "bin/kraken.js"
   },
   "type": "commonjs",
   "engines": {
@@ -35,7 +36,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node test/visor.test.js",
+    "test": "node test/kraken.test.js",
     "capturas": "node scripts/capturas.js"
   },
   "dependencies": {},

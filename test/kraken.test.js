@@ -1,4 +1,4 @@
-// test/visor.test.js — la prueba del visor.
+// test/kraken.test.js — la prueba del kraken.
 //
 // Levanta el server con una fixture inventada (nada de los datos de la
 // máquina), y revisa lo que hay que revisar: el token, la allowlist, el
@@ -40,7 +40,7 @@ function skip(nombre, porque) {
 const PROMPT = 'PROMPT-SECRETO-del-usuario-que-no-debe-salir';
 const TOOLOUT = 'TOOLOUTPUT-contenido-de-un-archivo-que-no-debe-salir';
 
-const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'visor-test-'));
+const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'kraken-test-'));
 const ESTADO = path.join(TMP, 'estado');
 const CONFIG = path.join(TMP, 'config');
 const FIXTURE = path.join(TMP, 'fixture');
@@ -50,10 +50,10 @@ for (const d of [ESTADO, CONFIG, PROYECTO, path.join(FIXTURE, 'opencode'), path.
   fs.mkdirSync(d, { recursive: true });
 }
 
-process.env.VISOR_ESTADO_DIR = ESTADO;
-process.env.VISOR_CONFIG_DIR = CONFIG;
-process.env.VISOR_OPENCODE_DIR = path.join(FIXTURE, 'opencode');
-process.env.VISOR_CLAUDE_DIR = path.join(FIXTURE, 'claude');
+process.env.KRAKEN_ESTADO_DIR = ESTADO;
+process.env.KRAKEN_CONFIG_DIR = CONFIG;
+process.env.KRAKEN_OPENCODE_DIR = path.join(FIXTURE, 'opencode');
+process.env.KRAKEN_CLAUDE_DIR = path.join(FIXTURE, 'claude');
 
 function escribirConfig(raices) {
   fs.writeFileSync(
@@ -164,7 +164,7 @@ function cargarPanel(snapshot, opciones) {
   const opts = opciones || {};
   const dom = domDeMentira(IDS_DEL_PANEL);
   const guardado = {};
-  if (opts.token) guardado['visor.token'] = opts.token;
+  if (opts.token) guardado['kraken.token'] = opts.token;
   const estado = opts.status || 200;
   // en el HTML de verdad el aviso arranca escondido
   const aviso = dom.porId.get('aviso');
@@ -201,7 +201,7 @@ function cargarPanel(snapshot, opciones) {
     window: { scrollY: 0, scrollTo: () => {}, addEventListener: () => {} },
     fetch: () => Promise.resolve({ status: estado, json: () => Promise.resolve(snapshot) }),
     EventSource: class { constructor() { this.close = () => {}; } },
-    VisorI18n: require(path.join(SRC, 'i18n.js')),
+    KrakenI18n: require(path.join(SRC, 'i18n.js')),
   };
   contexto.globalThis = contexto;
   const codigo = fs.readFileSync(path.join(RAIZ, 'public', 'panel.js'), 'utf8');
@@ -229,7 +229,7 @@ function esperar(ms) {
 // --- el test ----------------------------------------------------------------
 
 (async () => {
-  console.log('\nVisor IA — test\n');
+  console.log('\nKraken — test\n');
 
   // La allowlist arranca vacía: no se muestra nada.
   escribirConfig([]);
@@ -246,14 +246,14 @@ function esperar(ms) {
   check('el estado no cae en Documents ni Desktop',
     !/Documents|Desktop|Dropbox|iCloud/i.test(rutas.estado()),
     rutas.estado());
-  const override = process.env.VISOR_ESTADO_DIR;
-  delete process.env.VISOR_ESTADO_DIR;
+  const override = process.env.KRAKEN_ESTADO_DIR;
+  delete process.env.KRAKEN_ESTADO_DIR;
   const estadoReal = rutas.estado();
-  process.env.VISOR_ESTADO_DIR = override;
+  process.env.KRAKEN_ESTADO_DIR = override;
   check('el estado por SO tiene el nombre esperado',
-    process.platform === 'win32' ? /VisorIA$/.test(estadoReal)
-      : process.platform === 'darwin' ? /Application Support[\\/]VisorIA$/.test(estadoReal)
-        : /visor-ia$/.test(estadoReal),
+    process.platform === 'win32' ? /Kraken$/.test(estadoReal)
+      : process.platform === 'darwin' ? /Application Support[\\/]Kraken$/.test(estadoReal)
+        : /kraken$/.test(estadoReal),
     estadoReal);
 
   console.log('\nallowlist');
@@ -334,12 +334,12 @@ function esperar(ms) {
   console.log('\nhttp y token');
   const sinToken = await pedir('/api/state');
   check('sin token, /api/state da 401', sinToken.status === 401, `dio ${sinToken.status}`);
-  const conToken = await pedir('/api/state', { 'X-Visor-Token': token });
+  const conToken = await pedir('/api/state', { 'X-Kraken-Token': token });
   check('con token, /api/state da 200', conToken.status === 200, `dio ${conToken.status}`);
   check('con token, /api/state trae el snapshot', !!(JSON.parse(conToken.cuerpo).sesiones));
   const conTokenQuery = await pedir(`/api/state?token=${token}`);
   check('el token también va por query', conTokenQuery.status === 200, `dio ${conTokenQuery.status}`);
-  const tokenMalo = await pedir('/api/state', { 'X-Visor-Token': 'a'.repeat(32) });
+  const tokenMalo = await pedir('/api/state', { 'X-Kraken-Token': 'a'.repeat(32) });
   check('un token que no es el da 401', tokenMalo.status === 401, `dio ${tokenMalo.status}`);
   const sseSinToken = await pedir('/api/events');
   check('sin token, /api/events da 401', sseSinToken.status === 401, `dio ${sseSinToken.status}`);
@@ -356,7 +356,7 @@ function esperar(ms) {
   check('una ruta que no existe da 404', inventada.status === 404, `dio ${inventada.status}`);
   check('el 404 no dice qué rutas existen', !/api|state|events|panel|favicon/i.test(inventada.cuerpo), inventada.cuerpo);
   check('el 404 no filtra el token', !inventada.cuerpo.includes(token));
-  const apiInventada = await pedir('/api/no-existe', { 'X-Visor-Token': token });
+  const apiInventada = await pedir('/api/no-existe', { 'X-Kraken-Token': token });
   check('una ruta de api que no existe da 404', apiInventada.status === 404, `dio ${apiInventada.status}`);
   const apiSinToken = await pedir('/api/no-existe');
   check('una ruta de api sin token da 401 y no 404', apiSinToken.status === 401, `dio ${apiSinToken.status}`);
@@ -364,13 +364,13 @@ function esperar(ms) {
   console.log('\netag');
   const etag = conToken.headers.etag;
   check('la respuesta trae ETag', !!etag, String(etag));
-  const conEtag = await pedir('/api/state', { 'X-Visor-Token': token, 'If-None-Match': etag });
+  const conEtag = await pedir('/api/state', { 'X-Kraken-Token': token, 'If-None-Match': etag });
   check('con el ETag igual, da 304', conEtag.status === 304, `dio ${conEtag.status}`);
 
   console.log('\nhtml');
   const html = fs.readFileSync(path.join(RAIZ, 'public', 'index.html'), 'utf8');
   check('no está la scanline', !/scanline/i.test(html));
-  check('el HTML trae el placeholder del nonce', html.includes('__VISOR_NONCE__'));
+  check('el HTML trae el placeholder del nonce', html.includes('__KRAKEN_NONCE__'));
   check('el HTML carga el panel y la i18n', html.includes('/panel.js') && html.includes('/i18n.js'));
   check('el HTML tiene las reglas de una columna para portrait',
     /@media \(max-width: 820px\)/.test(html) && /grid-template-columns: minmax\(0, 1fr\)/.test(html));
@@ -383,9 +383,9 @@ function esperar(ms) {
       ['nombre', 'activas', 'terminadas', 'terminado', 'sinActividad', 'idioma'].every((k) => typeof i18n.TRADUCCIONES[id][k] === 'string'));
   }
   check('el nombre del producto está traducido',
-    i18n.TRADUCCIONES.es.nombre === 'Visor IA'
-    && i18n.TRADUCCIONES.en.nombre === 'AI Monitor'
-    && i18n.TRADUCCIONES.pt.nombre === 'Monitor IA');
+    i18n.TRADUCCIONES.es.nombre === 'Kraken'
+    && i18n.TRADUCCIONES.en.nombre === 'Kraken'
+    && i18n.TRADUCCIONES.pt.nombre === 'Kraken');
   check('la detección por el navegador funciona', i18n.detectar('pt-BR', null) === 'pt');
   check('el ?lang gana de la detección', i18n.detectar('pt-BR', 'en') === 'en');
   check('sin dato, español', i18n.detectar('de-DE', null) === 'es');
@@ -393,9 +393,9 @@ function esperar(ms) {
   check('las tres tablas tienen las mismas claves', i18n.IDIOMAS.every((id) => Object.keys(i18n.TRADUCCIONES[id]).sort().join(',') === Object.keys(i18n.TRADUCCIONES.es).sort().join(',')));
   check('la clave faltaToken está en los tres idiomas', i18n.IDIOMAS.every((id) => typeof i18n.TRADUCCIONES[id].faltaToken === 'string'));
   check('la clave tokenInvalido está en los tres idiomas', i18n.IDIOMAS.every((id) => typeof i18n.TRADUCCIONES[id].tokenInvalido === 'string'));
-  check('el aviso del token en español', i18n.t('es', 'faltaToken') === 'Falta el token. Corré `visor open`', i18n.t('es', 'faltaToken'));
-  check('el aviso del token en inglés', i18n.t('en', 'faltaToken') === 'Missing token. Run `visor open`', i18n.t('en', 'faltaToken'));
-  check('el aviso del token en portugués', i18n.t('pt', 'faltaToken') === 'Falta o token. Rode `visor open`', i18n.t('pt', 'faltaToken'));
+  check('el aviso del token en español', i18n.t('es', 'faltaToken') === 'Falta el token. Corré `kraken open`', i18n.t('es', 'faltaToken'));
+  check('el aviso del token en inglés', i18n.t('en', 'faltaToken') === 'Missing token. Run `kraken open`', i18n.t('en', 'faltaToken'));
+  check('el aviso del token en portugués', i18n.t('pt', 'faltaToken') === 'Falta o token. Rode `kraken open`', i18n.t('pt', 'faltaToken'));
 
   console.log('\nel panel');
   const { dom, contexto } = cargarPanel(snap);
@@ -414,7 +414,7 @@ function esperar(ms) {
   const sinTokenPanel = cargarPanel(snap, {});
   const avisoSinToken = sinTokenPanel.dom.porId.get('aviso');
   check('sin token el panel se queja', avisoSinToken.textContent !== '', "el aviso quedó vacío");
-  check('sin token el aviso dice qué hacer', /visor open/.test(avisoSinToken.textContent), avisoSinToken.textContent);
+  check('sin token el aviso dice qué hacer', /kraken open/.test(avisoSinToken.textContent), avisoSinToken.textContent);
   check('sin token el aviso sale a la vista', avisoSinToken.hidden === false);
   check('sin token el aviso está traducido', avisoSinToken.textContent === i18n.t('es', 'faltaToken'), avisoSinToken.textContent);
 
@@ -424,7 +424,7 @@ function esperar(ms) {
   const aviso401 = con401.dom.porId.get('aviso');
   check('un 401 deja el aviso a la vista', aviso401.hidden === false);
   check('un 401 cambia el aviso', aviso401.textContent !== '' && aviso401.textContent !== i18n.t('es', 'faltaToken'), aviso401.textContent);
-  check('un 401 borra el token viejo', !('visor.token' in con401.guardado), JSON.stringify(con401.guardado));
+  check('un 401 borra el token viejo', !('kraken.token' in con401.guardado), JSON.stringify(con401.guardado));
 
   console.log('\ndegradación sin node:sqlite');
   try {
@@ -451,7 +451,7 @@ function esperar(ms) {
   check('sin dependencias runtime', Object.keys(pkg.dependencies || {}).length === 0);
   check('sin postinstall', !pkg.scripts || !pkg.scripts.postinstall);
   check('engines.node >= 22.13', pkg.engines && /22\.13|>=22/.test(pkg.engines.node), JSON.stringify(pkg.engines));
-  check('el bin es visor', pkg.bin && pkg.bin.visor === 'bin/visor.js');
+  check('el bin es kraken', pkg.bin && pkg.bin.kraken === 'bin/kraken.js');
 
   const prohibido = [
     process.env.USERPROFILE, process.env.HOME, path.resolve(RAIZ, '..'),
@@ -474,28 +474,28 @@ function esperar(ms) {
 
   console.log('\nla CLI');
   const { spawnSync } = require('child_process');
-  const doctor = spawnSync(process.execPath, [path.join(RAIZ, 'bin', 'visor.js'), 'doctor'], { encoding: 'utf8' });
-  check('visor doctor sale con 0', doctor.status === 0, doctor.stderr);
-  check('visor doctor no imprime el path del repo', !doctor.stdout.includes(RAIZ), doctor.stdout);
-  const emit = spawnSync(process.execPath, [path.join(RAIZ, 'bin', 'visor.js'), 'emit', '--kind', 'session.step', '--sid', 'ses-cli-1', '--src', 'cli', '--title', 'agente-cli'], { encoding: 'utf8' });
-  check('visor emit escribe un evento', emit.status === 0 && /ses-cli-1/.test(emit.stdout), emit.stderr);
+  const doctor = spawnSync(process.execPath, [path.join(RAIZ, 'bin', 'kraken.js'), 'doctor'], { encoding: 'utf8' });
+  check('kraken doctor sale con 0', doctor.status === 0, doctor.stderr);
+  check('kraken doctor no imprime el path del repo', !doctor.stdout.includes(RAIZ), doctor.stdout);
+  const emit = spawnSync(process.execPath, [path.join(RAIZ, 'bin', 'kraken.js'), 'emit', '--kind', 'session.step', '--sid', 'ses-cli-1', '--src', 'cli', '--title', 'agente-cli'], { encoding: 'utf8' });
+  check('kraken emit escribe un evento', emit.status === 0 && /ses-cli-1/.test(emit.stdout), emit.stderr);
   check('el evento emitido queda en el JSONL',
     fs.readFileSync(path.join(ESTADO, 'events.jsonl'), 'utf8').includes('ses-cli-1'));
 
   console.log('\nla CLI: url y open');
-  const urlCmd = spawnSync(process.execPath, [path.join(RAIZ, 'bin', 'visor.js'), 'url'], {
+  const urlCmd = spawnSync(process.execPath, [path.join(RAIZ, 'bin', 'kraken.js'), 'url'], {
     encoding: 'utf8',
-    env: { ...process.env, VISOR_ESTADO_DIR: ESTADO },
+    env: { ...process.env, KRAKEN_ESTADO_DIR: ESTADO },
   });
-  check('visor url sale con 0', urlCmd.status === 0, urlCmd.stderr);
-  check('visor url devuelve una URL con token', /^http:\/\/(localhost|127\.0\.0\.1):\d+\/\?token=[0-9a-f]{32}$/.test(urlCmd.stdout.trim()), urlCmd.stdout);
+  check('kraken url sale con 0', urlCmd.status === 0, urlCmd.stderr);
+  check('kraken url devuelve una URL con token', /^http:\/\/(localhost|127\.0\.0\.1):\d+\/\?token=[0-9a-f]{32}$/.test(urlCmd.stdout.trim()), urlCmd.stdout);
   check('el token de la URL es el del estado', urlCmd.stdout.includes(token));
-  const openCmd = spawnSync(process.execPath, [path.join(RAIZ, 'bin', 'visor.js'), 'open'], {
+  const openCmd = spawnSync(process.execPath, [path.join(RAIZ, 'bin', 'kraken.js'), 'open'], {
     encoding: 'utf8',
-    env: { ...process.env, VISOR_ESTADO_DIR: ESTADO, VISOR_ABRIR: '0' },
+    env: { ...process.env, KRAKEN_ESTADO_DIR: ESTADO, KRAKEN_ABRIR: '0' },
   });
-  check('visor open sale con 0', openCmd.status === 0, openCmd.stderr);
-  check('visor open imprime la URL', /token=[0-9a-f]{32}/.test(openCmd.stdout), openCmd.stdout);
+  check('kraken open sale con 0', openCmd.status === 0, openCmd.stderr);
+  check('kraken open imprime la URL', /token=[0-9a-f]{32}/.test(openCmd.stdout), openCmd.stdout);
 
   console.log('\nla rotación del JSONL');
   const eventosRot = require(path.join(SRC, 'eventos.js'));
@@ -532,6 +532,19 @@ function esperar(ms) {
   check('el puerto que queda es 7318 o el siguiente', elegido === 7318 || elegido > 7318 || elegido === 0, `quedó en ${elegido}`);
   try { propio.close(); } catch { /* ya estaba */ }
   if (!yaEstaba) { try { ocupante.close(); } catch { /* ya estaba */ } }
+
+  console.log('\nlas invariantes del panel');
+  const fuentesPanel = fs.readFileSync(path.join(SRC, 'fuentes.js'), 'utf8');
+  const servidorPanel = fs.readFileSync(path.join(SRC, 'servidor.js'), 'utf8');
+  check('la base del IDE se abre en solo lectura',
+    /readOnly:\s*true/.test(fuentesPanel) && /PRAGMA query_only=1/.test(fuentesPanel));
+  check('las sesiones salen de la tabla session',
+    /from session/.test(fuentesPanel) && /sesionesOpencode/.test(servidorPanel));
+  check('la CSP no lleva unsafe-inline',
+    !/unsafe-inline/.test(servidorPanel) && /script-src 'nonce-/.test(servidorPanel));
+  const codigoSql = fuentesPanel.replace(/^\s*\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  check('no hay select * from part',
+    !/select\s+\*\s+from\s+part/i.test(codigoSql) && /json_extract/.test(codigoSql));
 
   servidor.server.close();
   try { fs.rmSync(TMP, { recursive: true, force: true }); } catch { /* el tmp se limpia solo */ }

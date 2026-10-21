@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-// visor.js — la CLI del visor.
+// kraken.js — la CLI del kraken.
 //
-//   visor serve [--port N] [--host H] [--no-browser] [--lang es|en|pt]
-//   visor url
-//   visor open
-//   visor install-ide [--dry-run]
-//   visor uninstall [--keep-state]
-//   visor autostart [--remove] [--con-navegador]
-//   visor emit [--kind K] [--sid S] [--src X] [--title T] [--tool T] [--step N --total N] [--project P]
-//   visor doctor
+//   kraken serve [--port N] [--host H] [--no-browser] [--lang es|en|pt]
+//   kraken url
+//   kraken open
+//   kraken install-ide [--dry-run]
+//   kraken uninstall [--keep-state]
+//   kraken autostart [--remove] [--con-navegador]
+//   kraken emit [--kind K] [--sid S] [--src X] [--title T] [--tool T] [--step N --total N] [--project P]
+//   kraken doctor
 
 const path = require('path');
 const fs = require('fs');
@@ -16,17 +16,17 @@ const fs = require('fs');
 const COMANDOS = ['serve', 'url', 'open', 'install-ide', 'uninstall', 'autostart', 'emit', 'doctor', 'help'];
 
 function uso() {
-  console.log(`visor — panel local de agentes
+  console.log(`kraken — panel local de agentes
 
-  visor serve [--port N] [--host H] [--no-browser] [--lang es|en|pt] [--dir RUTA]
-  visor url                       imprime la URL del panel con el token
-  visor open                      abre el panel en el navegador
-  visor install-ide [--dry-run]      plugin de opencode + hooks de Claude Code (opt-in)
-  visor uninstall [--keep-state]      revierte autostart, plugin, hooks y estado
-  visor autostart [--remove]          arranca solo al iniciar sesión
+  kraken serve [--port N] [--host H] [--no-browser] [--lang es|en|pt] [--dir RUTA]
+  kraken url                       imprime la URL del panel con el token
+  kraken open                      abre el panel en el navegador
+  kraken install-ide [--dry-run]      plugin de opencode + hooks de Claude Code (opt-in)
+  kraken uninstall [--keep-state]      revierte autostart, plugin, hooks y estado
+  kraken autostart [--remove]          arranca solo al iniciar sesión
                 [--con-navegador]     y abre el panel al entrar
-  visor emit [--kind K] [--sid S] [--src X] [--title T] [--tool T] [--step N] [--total N] [--project P]
-  visor doctor                        estado de la máquina
+  kraken emit [--kind K] [--sid S] [--src X] [--title T] [--tool T] [--step N] [--total N] [--project P]
+  kraken doctor                        estado de la máquina
 
   El panel vive en http://localhost:7317. Si ese puerto está tomado se prueban
   los diez siguientes y, al final, uno efímero.
@@ -69,19 +69,19 @@ async function comandoOpen() {
   const servidor = require('../src/servidor.js');
   const navegador = require('../src/navegador.js');
   const url = servidor.urlConToken();
-  // VISOR_ABRIR=0 no abre nada: sólo imprime la URL
-  if (process.env.VISOR_ABRIR === '0') {
+  // KRAKEN_ABRIR=0 no abre nada: sólo imprime la URL
+  if (process.env.KRAKEN_ABRIR === '0') {
     console.log(url);
     return;
   }
   const r = await navegador.abrir(url);
   if (r.abierto) {
-    console.log(`visor: panel abierto en ${url.split('?')[0]}`);
+    console.log(`kraken: panel abierto en ${url.split('?')[0]}`);
     return;
   }
   // si no hay navegador la cosa sigue: la URL queda a mano
   console.log(url);
-  console.error(`visor: no pude abrir el navegador (${r.motivo}). Abrí la URL de arriba a mano.`);
+  console.error(`kraken: no pude abrir el navegador (${r.motivo}). Abrí la URL de arriba a mano.`);
 }
 
 function comandoEmit(resto) {
@@ -178,7 +178,7 @@ function main() {
     case undefined:
       return uso();
     default:
-      console.error(`visor: no conozco el comando "${cmd}"`);
+      console.error(`kraken: no conozco el comando "${cmd}"`);
       uso();
       process.exitCode = 2;
       return undefined;

@@ -1,9 +1,9 @@
 /**
- * visor-feed.js — el plugin de opencode que alimenta el visor. Traduce los
+ * kraken-feed.js — el plugin de opencode que alimenta el kraken. Traduce los
  * eventos del IDE a líneas del JSONL: sólo metadatos, nunca el prompt ni el
  * contenido de los archivos leídos.
  *
- * Va en try/catch en todos lados: un error del visor no puede romper el IDE.
+ * Va en try/catch en todos lados: un error del kraken no puede romper el IDE.
  */
 
 import { createRequire } from 'node:module';
@@ -13,7 +13,7 @@ const require = createRequire(import.meta.url);
 // En el repo el módulo vive un nivel arriba; instalado global queda al lado
 // del plugin con otro nombre (lo copia instalar.js).
 function cargarEventos() {
-  const candidatos = ['./visor-eventos.js', '../eventos.js'];
+  const candidatos = ['./kraken-eventos.js', '../eventos.js'];
   for (const c of candidatos) {
     try {
       return require(c);
@@ -53,7 +53,7 @@ export const VisorFeed = async ({ directory, worktree }) => {
     try {
       eventos.escribirEvento(evento);
     } catch {
-      // el visor es un extra: si falla, el IDE sigue igual
+      // el kraken es un extra: si falla, el IDE sigue igual
     }
   };
 
@@ -123,7 +123,7 @@ export const VisorFeed = async ({ directory, worktree }) => {
           return;
         }
 
-        // la sesión terminó y volvió a moverse: el visor la reactiva
+        // la sesión terminó y volvió a moverse: el kraken la reactiva
         const revive = tipo === 'session.updated' || tipo === 'message.updated' || tipo === 'session.status';
         if (revive && cerradas.has(sid)) {
           cerradas.delete(sid);

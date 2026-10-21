@@ -1,5 +1,5 @@
 // fuentes.js — lee las dos fuentes de los IDEs y las deja en el mismo shape:
-// el visor no sabe de dónde salió cada sesión.
+// el kraken no sabe de dónde salió cada sesión.
 //
 // opencode: el SQLite de ~/.local/share/opencode/opencode.db, en sólo lectura.
 // Claude Code: los transcripts JSONL de ~/.claude/projects/*/.
@@ -129,7 +129,7 @@ const SQL_TODOS = 'select session_id, content, status, priority, position from t
 const cachePartes = new Map();   // session_id -> { tool, estado, bytes, ts, tocados, timeSesion }
 
 // Las caches se podran: una ficha que hace un día no se tocó no sirve más
-// y la memoria del visor no tiene por qué crecer con el histórico.
+// y la memoria del kraken no tiene por qué crecer con el histórico.
 function podar(cache) {
   const limite = Date.now() - TTL_CACHE;
   for (const [k, v] of cache) {

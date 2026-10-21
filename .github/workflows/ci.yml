@@ -18,4 +18,4 @@ jobs:
         with:
           node-version: '22.13'
       - name: Test
-        run: node test/visor.test.js
+        run: node test/kraken.test.js
