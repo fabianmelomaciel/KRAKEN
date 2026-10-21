@@ -270,6 +270,7 @@ function foto(exe, url, destino, ancho, alto) {
   // que la página se quede quieta y el SSE no se queda quieta nunca.
   const url = `http://127.0.0.1:${PUERTO}/?token=${token}&foto=1`;
 
+  let snapshot = '';
   try {
     for (const f of FOTOS) {
       const destino = path.join(SALIDA, f.nombre);
@@ -283,6 +284,8 @@ function foto(exe, url, destino, ancho, alto) {
       const st = fs.statSync(destino);
       console.log(`${f.nombre}  ${f.ancho}x${f.alto}  ${(st.size / 1024).toFixed(0)} kB`);
     }
+    // lo que ve el navegador tampoco puede llevar paths
+    snapshot = await pedirEstado(token, PUERTO);
   } finally {
     hijo.kill();
   }
@@ -298,6 +301,9 @@ function foto(exe, url, destino, ancho, alto) {
   for (const mal of prohibido) {
     if (estado.includes(mal)) infractores.push(`events.jsonl → ${mal}`);
   }
+  for (const mal of prohibido) {
+    if (snapshot.includes(mal)) infractores.push(`snapshot → ${mal}`);
+  }
   if (infractores.length) {
     console.error(`las capturas no están limpias: ${infractores.join(' | ')}`);
     process.exit(1);
@@ -308,3 +314,20 @@ function foto(exe, url, destino, ancho, alto) {
   console.error(e.message);
   process.exit(1);
 });
+
+function pedirEstado(token, puerto) {
+  const http = require('http');
+  return new Promise((resolve, reject) => {
+    const req = http.get({
+      host: '127.0.0.1',
+      port: puerto,
+      path: '/api/state',
+      headers: { 'X-Visor-Token': token },
+    }, (res) => {
+      const trozos = [];
+      res.on('data', (t) => trozos.push(t));
+      res.on('end', () => resolve(Buffer.concat(trozos).toString('utf8')));
+    });
+    req.on('error', reject);
+  });
+}
