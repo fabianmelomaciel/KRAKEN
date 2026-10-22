@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Claves de mentira de los tests de redaccion"
+regexes = ['''AIzaSyA1234567890abcdefghijklmnopqrstuv''']

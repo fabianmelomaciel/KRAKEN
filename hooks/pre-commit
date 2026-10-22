@@ -11,4 +11,4 @@ if ! command -v gitleaks >/dev/null 2>&1; then
   exit 0
 fi
 
-gitleaks detect --no-banner --redact --staged --source . --exit-code 1
+gitleaks git --no-banner --redact --staged --exit-code 1
