@@ -7,15 +7,18 @@
 <title>Kraken</title>
 <style nonce="__KRAKEN_NONCE__">
 :root {
-  --fondo: #07090d;
-  --panel: #0d1117;
-  --linea: #1c2530;
-  --texto: #c7d3de;
-  --tenue: #6b7c8d;
-  --verde: #4ade80;
-  --ambar: #fbbf24;
-  --rojo: #f87171;
-  --azul: #60a5fa;
+  --fondo: #07070b;
+  --panel: #0e0d16;
+  --panel-alto: #141220;
+  --linea: #241f36;
+  --texto: #d9d4e8;
+  --tenue: #7b7494;
+  --rosa: #ff4d94;
+  --violeta: #b06cff;
+  --verde: #3ef2a0;
+  --ambar: #ffb347;
+  --azul: #5ac8ff;
+  --rojo: #ff6b6b;
   --sans: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 }
 
@@ -37,7 +40,13 @@ html, body {
 
 body {
   padding: 0 0 32px;
+  background:
+    radial-gradient(900px 480px at 18% -8%, rgba(255, 77, 148, 0.10), transparent 62%),
+    radial-gradient(760px 420px at 88% -4%, rgba(176, 108, 255, 0.10), transparent 60%),
+    var(--fondo);
 }
+
+/* --- barra superior ------------------------------------------------------ */
 
 .barra {
   display: flex;
@@ -48,7 +57,7 @@ body {
   min-height: 46px;
   padding: 14px 18px;
   border-bottom: 1px solid var(--linea);
-  background: linear-gradient(180deg, #0b1016, var(--fondo));
+  background: linear-gradient(180deg, #0d0c15, rgba(7, 7, 11, 0.92));
   position: sticky;
   top: 0;
   z-index: 5;
@@ -61,14 +70,24 @@ body {
   font-size: 17px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #e8f0f7;
+  color: #f2eefc;
 }
 
 .marca span { color: var(--tenue); font-size: 12px; }
 
-.derecha { display: flex; align-items: center; gap: 12px; }
+.punto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--rosa);
+  box-shadow: 0 0 10px rgba(255, 77, 148, 0.9);
+  align-self: center;
+  flex: none;
+}
 
-.reloj { color: var(--tenue); font-size: 12px; }
+.derecha { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.reloj { color: var(--tenue); font-size: 12px; font-variant-numeric: tabular-nums; }
 
 .luz {
   font-size: 11px;
@@ -80,9 +99,26 @@ body {
   color: var(--tenue);
 }
 
-.luz.l-vivo { color: var(--verde); border-color: #1f4d33; }
-.luz.l-degradado { color: var(--ambar); border-color: #4d3d1f; }
-.luz.l-sin-fuentes { color: var(--rojo); border-color: #4d2323; }
+.luz.l-vivo { color: var(--verde); border-color: rgba(62, 242, 160, 0.35); }
+.luz.l-degradado { color: var(--ambar); border-color: rgba(255, 179, 71, 0.35); }
+.luz.l-sin-fuentes { color: var(--rojo); border-color: rgba(255, 107, 107, 0.35); }
+
+.boton {
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rosa);
+  background: transparent;
+  border: 1px solid rgba(255, 77, 148, 0.45);
+  border-radius: 999px;
+  padding: 5px 14px;
+  cursor: pointer;
+}
+
+.boton:hover { box-shadow: 0 0 14px rgba(255, 77, 148, 0.25); }
+.boton[aria-pressed="true"] { color: var(--verde); border-color: rgba(62, 242, 160, 0.5); }
+.boton-icono { padding: 5px 11px; }
 
 select {
   background: var(--panel);
@@ -94,9 +130,151 @@ select {
   padding: 3px 6px;
 }
 
+/* --- cinta ---------------------------------------------------------------- */
+
+.cinta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 1px solid var(--linea);
+  background: rgba(14, 13, 22, 0.7);
+  overflow: hidden;
+  height: 38px;
+}
+
+.cinta-marco {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.cinta-pista {
+  display: flex;
+  flex: none;
+  gap: 40px;
+  white-space: nowrap;
+  width: max-content;
+}
+
+.cinta-texto {
+  color: var(--violeta);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: lowercase;
+}
+
+.cinta-texto::before { content: "▸ "; color: var(--rosa); }
+
+.vivo {
+  margin-left: auto;
+  flex: none;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--rosa);
+  border: 1px solid rgba(255, 77, 148, 0.45);
+  border-radius: 3px;
+  padding: 2px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vivo::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rosa);
+  box-shadow: 0 0 8px rgba(255, 77, 148, 0.9);
+}
+
+/* --- hero: la órbita de sesiones ------------------------------------------ */
+
+.orbita {
+  position: relative;
+  margin: 16px auto 0;
+  max-width: 1400px;
+  min-height: 300px;
+  border: 1px solid var(--linea);
+  border-radius: 6px;
+  background:
+    radial-gradient(620px 260px at 50% 46%, rgba(255, 77, 148, 0.07), transparent 70%),
+    linear-gradient(180deg, #0b0a12, #08070d);
+  overflow: hidden;
+}
+
+.orbita-lineas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.orbita-vacia {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tenue);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.nodos { position: absolute; inset: 0; }
+
+.nodo {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  min-width: 116px;
+  max-width: 190px;
+  padding: 6px 10px;
+  border: 1px solid var(--linea);
+  border-radius: 5px;
+  background: rgba(12, 11, 20, 0.92);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.nodo-nombre {
+  font-size: 11px;
+  color: #efe9ff;
+  letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+}
+
+.nodo-dato {
+  font-size: 10px;
+  color: var(--tenue);
+  letter-spacing: 0.08em;
+  overflow-wrap: anywhere;
+}
+
+.nodo-foco {
+  border-color: rgba(255, 77, 148, 0.65);
+  box-shadow: 0 0 26px rgba(255, 77, 148, 0.28);
+  min-width: 150px;
+}
+
+.nodo-foco .nodo-nombre { color: var(--rosa); }
+
+.nodo-vivo .nodo-dato { color: var(--verde); }
+
+.p1 { left: 50%; top: 44%; }
+.p2 { left: 23%; top: 20%; }
+.p3 { left: 73%; top: 16%; }
+.p4 { left: 11%; top: 62%; }
+.p5 { left: 85%; top: 58%; }
+.p6 { left: 35%; top: 78%; }
+.p7 { left: 64%; top: 80%; }
+.p8 { left: 46%; top: 9%; }
+
+/* --- los seis números ------------------------------------------------------ */
+
 .tarjetas {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 1px;
   background: var(--linea);
   border-bottom: 1px solid var(--linea);
@@ -119,14 +297,34 @@ select {
 }
 
 .tarjeta .valor {
-  color: #e8f0f7;
+  color: #f2eefc;
   font-size: 19px;
   font-variant-numeric: tabular-nums;
 }
 
+.tarjeta .nota { color: var(--tenue); font-size: 10px; letter-spacing: 0.06em; }
+
+.spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 18px;
+  margin-top: 4px;
+}
+
+.spark i {
+  flex: 1 1 auto;
+  min-width: 1px;
+  height: var(--h, 10%);
+  background: linear-gradient(180deg, var(--rosa), rgba(255, 77, 148, 0.25));
+  border-radius: 1px;
+}
+
+/* --- tablero --------------------------------------------------------------- */
+
 .tablero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 260px;
+  grid-template-columns: minmax(0, 1fr) 300px;
   gap: 18px;
   padding: 18px;
   align-items: start;
@@ -145,6 +343,8 @@ select {
   border-bottom: 1px solid var(--linea);
   padding-bottom: 6px;
 }
+
+.columna h2.separado { margin-top: 18px; }
 
 .lista { display: flex; flex-direction: column; gap: 8px; }
 
@@ -176,7 +376,7 @@ select {
 
 .fila.tenue { color: var(--tenue); font-size: 12px; justify-content: flex-start; flex-wrap: wrap; }
 
-.titulo { color: #e8f0f7; min-width: 0; overflow-wrap: anywhere; }
+.titulo { color: #f2eefc; min-width: 0; overflow-wrap: anywhere; }
 
 .estado {
   font-size: 10px;
@@ -193,15 +393,17 @@ select {
 .proyecto { color: var(--azul); }
 .ide, .modelo, .agente { color: var(--tenue); }
 
-.barra {
+/* la barra de progreso de una sesión: NO se llama .barra, que es la del
+   header, y las dos se pisaban (la del header quedaba con altura fija) */
+.medidor {
   height: 3px;
   background: #151d26;
   border-radius: 2px;
   overflow: hidden;
 }
 
-.barra .relleno { height: 100%; background: var(--verde); }
-.barra.actividad .relleno { width: 35%; background: #2c6b48; }
+.medidor .relleno { height: 100%; width: var(--ancho, 100%); background: var(--verde); }
+.medidor.actividad .relleno { width: 35%; background: #2c6b48; }
 
 .pie { color: var(--tenue); font-size: 11px; }
 
@@ -228,18 +430,112 @@ select {
   margin-top: 10px;
   color: var(--ambar);
   font-size: 12px;
-  border: 1px solid #3d3318;
-  background: #17140c;
+  border: 1px solid rgba(255, 179, 71, 0.3);
+  background: rgba(255, 179, 71, 0.07);
   border-radius: 3px;
   padding: 7px 9px;
 }
 
+/* --- los dos paneles de abajo ---------------------------------------------- */
+
+.paneles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 18px;
+  padding: 0 18px 18px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.panel {
+  border: 1px solid var(--linea);
+  border-radius: 4px;
+  background: var(--panel);
+  padding: 12px 14px;
+  min-width: 0;
+}
+
+.panel-cab {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--linea);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.panel-cab h3 {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #efe9ff;
+}
+
+.panel-cab span { color: var(--tenue); font-size: 10px; letter-spacing: 0.1em; }
+
+.veredictos { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow: hidden; }
+
+.veredicto {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--texto);
+  min-width: 0;
+}
+
+.veredicto b {
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  flex: none;
+}
+
+.veredicto.v-score b { color: var(--violeta); }
+.veredicto.v-choice b { color: var(--rosa); }
+.veredicto.v-noul b { color: var(--verde); }
+.veredicto span { overflow-wrap: anywhere; }
+
+.reparto { display: flex; flex-direction: column; gap: 7px; }
+
+.reparto-fila { display: flex; flex-direction: column; gap: 3px; }
+
+.reparto-cab {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--tenue);
+}
+
+.reparto-cab b { color: var(--texto); font-weight: 400; overflow-wrap: anywhere; }
+
+.reparto-cab i { font-style: normal; font-variant-numeric: tabular-nums; }
+
+.pista {
+  height: 8px;
+  border-radius: 2px;
+  background: #17141f;
+  overflow: hidden;
+}
+
+.pista i {
+  display: block;
+  height: 100%;
+  width: var(--ancho, 0%);
+  background: linear-gradient(90deg, var(--violeta), var(--rosa));
+}
+
 [hidden] { display: none !important; }
 
-/* Portrait: una sola columna, sin scroll horizontal. */
+/* --- portrait: una sola columna, sin scroll horizontal ---------------------- */
 @media (max-width: 820px) {
   body { font-size: 15px; }
   .tablero { grid-template-columns: minmax(0, 1fr); padding: 12px; gap: 14px; }
+  .paneles { grid-template-columns: minmax(0, 1fr); padding: 0 12px 12px; gap: 12px; }
   .barra { padding: 11px 12px; position: static; min-height: 42px; }
   .marca h1 { font-size: 15px; }
   .tarjetas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -247,50 +543,132 @@ select {
   .tarjeta .valor { font-size: 17px; }
   .fila { flex-direction: column; align-items: flex-start; gap: 3px; }
   .estado { order: -1; }
+  .orbita { min-height: 190px; margin-top: 12px; }
+  /* en portrait los nodos no entran en una órbita: pasan a una grilla de
+     fichas, así ninguno queda cortado contra el borde */
+  .nodos {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 10px;
+    align-content: flex-start;
+  }
+  .nodo {
+    position: static;
+    transform: none;
+    flex: 1 1 44%;
+    min-width: 0;
+    max-width: none;
+    padding: 4px 7px;
+  }
+  .nodo-nombre { font-size: 10px; }
+  .nodo-dato { font-size: 9px; }
+  #columna-proyectos { display: none; }
+  #columna-proyectos.mostrar { display: block; }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .barra.actividad .relleno { animation: latido 2.4s ease-in-out infinite; }
+  .medidor.actividad .relleno { animation: latido 2.4s ease-in-out infinite; }
+  .cinta-pista { animation: correr 42s linear infinite; }
+  .vivo::before { animation: latido 1.6s ease-in-out infinite; }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .cinta-pista { animation: none; }
+}
+
+/* en modo foto nada se mueve: la cinta tiene que salir entera y una sola vez.
+   En portrait no entra en una línea, así que se deja envolver. */
+.foto .cinta-pista { animation: none; width: auto; flex: 1 1 auto; }
+.foto .cinta-texto[aria-hidden="true"] { display: none; }
+.foto .cinta { height: auto; min-height: 38px; align-items: center; }
+.foto .cinta-marco { height: auto; overflow: visible; }
+.foto .cinta-texto { white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }
 
 @keyframes latido {
   0%, 100% { opacity: 0.45; }
   50% { opacity: 0.9; }
+}
+
+@keyframes correr {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
 </style>
 </head>
 <body>
 <header class="barra">
   <div class="marca">
+    <span class="punto" aria-hidden="true"></span>
     <h1 id="titulo">Kraken</h1>
     <span id="subtitulo"></span>
   </div>
   <div class="derecha">
     <span id="reloj" class="reloj"></span>
     <span id="luz" class="luz"></span>
+    <button id="pausa" class="boton" type="button" aria-pressed="false"></button>
     <label class="reloj" id="et-idioma" for="idioma">Idioma</label>
     <select id="idioma" aria-label="Idioma"></select>
+    <button id="menu" class="boton boton-icono" type="button" aria-expanded="false" aria-controls="columna-proyectos">≡</button>
   </div>
 </header>
 
+<section class="cinta" aria-label="tape">
+  <div class="cinta-marco">
+    <div class="cinta-pista">
+      <span class="cinta-texto" id="cinta-texto"></span>
+      <span class="cinta-texto" id="cinta-texto-2" aria-hidden="true"></span>
+    </div>
+  </div>
+  <span class="vivo" id="cinta-vivo">live</span>
+</section>
+
+<section class="orbita" id="orbita">
+  <svg class="orbita-lineas" viewBox="0 0 1000 420" preserveAspectRatio="none" aria-hidden="true">
+    <ellipse cx="500" cy="210" rx="330" ry="150" fill="none" stroke="rgba(255,77,148,0.18)" stroke-width="1" stroke-dasharray="3 9" />
+    <ellipse cx="500" cy="210" rx="210" ry="96" fill="none" stroke="rgba(176,108,255,0.16)" stroke-width="1" stroke-dasharray="2 11" />
+    <path d="M170 84 L500 210 L830 70 M90 260 L500 210 L760 340 M500 40 L500 210 M250 330 L500 210" fill="none" stroke="rgba(62,242,160,0.10)" stroke-width="1" stroke-dasharray="1 12" />
+  </svg>
+  <div class="nodos" id="orbita-nodos"></div>
+  <span class="orbita-vacia" id="orbita-vacia" hidden></span>
+</section>
+
 <section class="tarjetas">
-  <div class="tarjeta"><span class="etiqueta" id="et-activas">Activas</span><span class="valor" id="st-activas">0</span></div>
-  <div class="tarjeta"><span class="etiqueta" id="et-terminadas">Terminadas</span><span class="valor" id="st-terminadas">0</span></div>
-  <div class="tarjeta"><span class="etiqueta" id="et-agentes">Agentes</span><span class="valor" id="st-agentes">0</span></div>
-  <div class="tarjeta"><span class="etiqueta" id="et-tokens">Tokens</span><span class="valor" id="st-tokens">0</span></div>
-  <div class="tarjeta"><span class="etiqueta" id="et-costo">Costo</span><span class="valor" id="st-costo">$0</span></div>
-  <div class="tarjeta"><span class="etiqueta" id="et-plan">Plan</span><span class="valor" id="st-percent">—</span></div>
+  <div class="tarjeta"><span class="etiqueta" id="et-activas">Activas</span><span class="valor" id="st-activas">0</span><span class="spark" id="sp-activas"></span></div>
+  <div class="tarjeta"><span class="etiqueta" id="et-terminadas">Terminadas</span><span class="valor" id="st-terminadas">0</span><span class="spark" id="sp-terminadas"></span></div>
+  <div class="tarjeta"><span class="etiqueta" id="et-agentes">Agentes</span><span class="valor" id="st-agentes">0</span><span class="spark" id="sp-agentes"></span></div>
+  <div class="tarjeta"><span class="etiqueta" id="et-tokens">Tokens</span><span class="valor" id="st-tokens">0</span><span class="spark" id="sp-tokens"></span></div>
+  <div class="tarjeta"><span class="etiqueta" id="et-costo">Costo</span><span class="valor" id="st-costo">$0</span><span class="spark" id="sp-costo"></span></div>
+  <div class="tarjeta"><span class="etiqueta" id="et-plan">Plan</span><span class="valor" id="st-percent">—</span><span class="spark" id="sp-percent"></span></div>
+</section>
+
+<section class="paneles">
+  <div class="panel">
+    <div class="panel-cab">
+      <h3 id="titulo-veredictos">Live verdicts</h3>
+      <span id="conteo-veredictos">0</span>
+    </div>
+    <div class="veredictos" id="veredictos"></div>
+  </div>
+  <div class="panel">
+    <div class="panel-cab">
+      <h3 id="titulo-reparto">Where the number lands</h3>
+      <span id="nota-reparto"></span>
+    </div>
+    <div class="reparto" id="reparto"></div>
+  </div>
 </section>
 
 <main class="tablero">
   <section class="columna">
     <h2 id="titulo-activas">Activas</h2>
     <div id="lista-activas" class="lista"></div>
-    <h2 id="titulo-terminadas" style="margin-top:18px">Terminadas</h2>
+    <h2 id="titulo-terminadas" class="separado">Terminadas</h2>
     <div id="lista-terminadas" class="lista"></div>
     <p id="vacio" class="vacio" hidden></p>
   </section>
-  <aside class="columna">
+  <aside class="columna" id="columna-proyectos">
     <h2 id="titulo-proyectos">Proyectos</h2>
     <ul id="proyectos" class="proyectos"></ul>
     <p id="aviso" class="aviso" hidden></p>

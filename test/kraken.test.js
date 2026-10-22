@@ -158,6 +158,11 @@ const IDS_DEL_PANEL = [
   'lista-activas', 'lista-terminadas', 'proyectos', 'vacio', 'aviso', 'reloj', 'luz', 'idioma',
   'st-activas', 'st-terminadas', 'st-agentes', 'st-tokens', 'st-costo', 'st-percent',
   'et-activas', 'et-terminadas', 'et-agentes', 'et-tokens', 'et-costo', 'et-plan', 'et-idioma',
+  // la piel nueva
+  'cinta-texto', 'cinta-texto-2', 'cinta-vivo', 'pausa', 'menu', 'columna-proyectos',
+  'orbita-nodos', 'orbita-vacia', 'veredictos', 'conteo-veredictos', 'reparto', 'nota-reparto',
+  'titulo-veredictos', 'titulo-reparto',
+  'sp-activas', 'sp-terminadas', 'sp-agentes', 'sp-tokens', 'sp-costo', 'sp-percent',
 ];
 
 function cargarPanel(snapshot, opciones) {
@@ -262,6 +267,8 @@ function esperar(ms) {
   escribirConfig([FIXTURE]);
   check('con la raíz puesta, la ruta entra', permisos.permitido(PROYECTO));
   check('una ruta que empieza igual pero no es la raíz no entra', !permisos.permitido(`${FIXTURE}-otro`));
+  escribirConfig([]);
+  check('la allowlist se relee apenas cambia el archivo', !permisos.permitido(PROYECTO));
   fs.rmSync(path.join(CONFIG, 'permisos.json'));
   check('sin archivo de configuración el modo es automático', permisos.config().modo === 'auto');
   check('en modo automático entra un proyecto que está fuera del home', permisos.permitido('C:\\proyectos\\otro-repo'));
@@ -319,6 +326,27 @@ function esperar(ms) {
   check('el output de la tool no sale', !crudo.includes(TOOLOUT));
   check('tampoco sale ninguna de las dos mitades sueltas',
     !crudo.includes('PROMPT-SECRETO') && !crudo.includes('TOOLOUTPUT'));
+
+  console.log('\nla ingesta y los secretos');
+  const largo = 'T'.repeat(500);
+  const registro = eventosMod.escribirEvento({ kind: 'session.start', sid: 'ses-tope', src: 'cli', title: largo });
+  check('el título de un evento entra topado', registro.title.length <= 40, `quedó con ${registro.title.length}`);
+  check('el título topado conserva el principio', /^T{39}/.test(registro.title), registro.title);
+  check('una clave de Anthropic queda tachada',
+    !fuentes.redactar('usaste sk-ant-api03-AAAABBBBCCCCDDDDEEEEFFFFGGGG por las dudas').includes('sk-ant-api03'),
+    fuentes.redactar('usaste sk-ant-api03-AAAABBBBCCCCDDDDEEEEFFFFGGGG por las dudas'));
+  check('un token de app de GitHub queda tachado',
+    !fuentes.redactar('ghs_AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHH').includes('ghs_'),
+    fuentes.redactar('ghs_AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHH'));
+  check('una clave de Slack queda tachada',
+    !fuentes.redactar('xoxb-123456789012-abcdefghijkl').includes('xoxb-'),
+    fuentes.redactar('xoxb-123456789012-abcdefghijkl'));
+  check('una clave de Google queda tachada',
+    !fuentes.redactar('AIzaSyA1234567890abcdefghijklmnopqrstuv').includes('AIzaSy'),
+    fuentes.redactar('AIzaSyA1234567890abcdefghijklmnopqrstuv'));
+  check('un token de Hugging Face queda tachado',
+    !fuentes.redactar('hf_AAAABBBBCCCCDDDDEEEEFFFFGGGG').includes('hf_'),
+    fuentes.redactar('hf_AAAABBBBCCCCDDDDEEEEFFFFGGGG'));
 
   console.log('\norden y tope de terminadas');
   const terminadas = snap.sesiones.filter((s) => s.estado === 'terminado');
@@ -409,6 +437,30 @@ function esperar(ms) {
   check('el panel no mete html crudo', !/\.innerHTML\s*=/.test(fs.readFileSync(path.join(RAIZ, 'public', 'panel.js'), 'utf8')));
   check('el panel traduce el estado', paint.etiquetaEstado({ estado: 'terminado' }) === 'terminado');
   check('el panel traduce el reposo', /sin actividad/i.test(paint.etiquetaEstado({ estado: 'inactivo', minutos: 7 })));
+
+  console.log('\nla piel nueva');
+  paint.pintar(snap);   // dos paint: la sparkline necesita dos muestras
+  const cinta = dom.porId.get('cinta-texto');
+  check('la cinta trae números', /\d/.test(cinta.textContent), cinta.textContent);
+  check('la cinta no lleva el título de una sesión',
+    !cinta.textContent.includes('PROMPT') && !cinta.textContent.includes(snap.sesiones[0].titulo),
+    cinta.textContent);
+  const nodos = dom.porId.get('orbita-nodos');
+  const nombresNodo = nodos.children.map((n) => n.children.map((c) => c.textContent).join(' ')).join(' | ');
+  check('la órbita dibuja nodos', nodos.children.length > 0, String(nodos.children.length));
+  check('la órbita no lleva títulos ni prompts',
+    !nombresNodo.includes('PROMPT') && !nombresNodo.includes('TOOLOUTPUT'),
+    nombresNodo);
+  const spark = dom.porId.get('sp-activas');
+  check('la sparkline dibuja barras', spark.children.length >= 2, String(spark.children.length));
+  const reparto = dom.porId.get('reparto');
+  check('el reparto tiene denominador real', reparto.children.length > 0, String(reparto.children.length));
+  const veredictosDom = dom.porId.get('veredictos');
+  check('los veredictos no filtran prompts',
+    !veredictosDom.children.map((c) => c.textContent).join(' ').includes('PROMPT'),
+    veredictosDom.children.map((c) => c.textContent).join(' '));
+  check('el botón de pausa existe', !!dom.porId.get('pausa'));
+  check('el menú existe', !!dom.porId.get('menu'));
 
   console.log('\nel panel sin token');
   const sinTokenPanel = cargarPanel(snap, {});

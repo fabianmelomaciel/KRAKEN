@@ -24,19 +24,25 @@ function archivoToken() {
 // proyectos que los propios IDEs ya conocen, y nada más. Con archivo, el
 // modo es restringido: "raices": [] deniega todo, y con raíces, sólo esas.
 //
-// El archivo se cachea por mtime: se lo relee sólo cuando cambia, para no
-// leerlo una vez por sesión y por tick.
+// El archivo se cachea por mtime y tamaño: se lo relee sólo cuando cambia,
+// para no leerlo una vez por sesión y por tick. El tamaño va con el mtime
+// porque dos escrituras en el mismo milisegundo comparten mtime: con sólo
+// el mtime, el kraken se podía quedar con la allowlist vieja.
 let cacheConfig = null;
 
 function config() {
   const archivo = archivoConfig();
   let mtime = 0;
+  let tamano = -1;
   try {
-    mtime = fs.statSync(archivo).mtimeMs;
+    const st = fs.statSync(archivo);
+    mtime = st.mtimeMs;
+    tamano = st.size;
   } catch {
     mtime = 0;
+    tamano = -1;
   }
-  if (cacheConfig && cacheConfig.mtime === mtime) return cacheConfig.valor;
+  if (cacheConfig && cacheConfig.mtime === mtime && cacheConfig.tamano === tamano) return cacheConfig.valor;
   let crudo = null;
   try {
     crudo = JSON.parse(fs.readFileSync(archivo, 'utf8'));
@@ -57,7 +63,7 @@ function config() {
       nivel: typeof crudo.nivel === 'string' ? crudo.nivel : 'metadata',
     };
   }
-  cacheConfig = { mtime, valor };
+  cacheConfig = { mtime, tamano, valor };
   return valor;
 }
 

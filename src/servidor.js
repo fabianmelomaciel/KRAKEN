@@ -65,6 +65,16 @@ const clientes = new Set();
 const numero = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const texto = (v) => (typeof v === 'string' && v !== '' ? v : null);
 
+// El título puede venir de un plugin o de un hook que escriben el JSONL sin
+// pasar por eventos.js: se topa y se redacta acá también, para que ningún
+// título llegue al panel con 64 KB de texto libre.
+function textoCorto(v, max) {
+  if (typeof v !== 'string' || v === '') return null;
+  const limpio = fuentes.redactar(v);
+  if (!limpio) return null;
+  return limpio.length > max ? `${limpio.slice(0, max - 1)}…` : limpio;
+}
+
 function sesionDe(ev, crear) {
   const sid = texto(ev.sid) || 'desconocida';
   let s = estadoEventos.get(sid);
@@ -72,7 +82,7 @@ function sesionDe(ev, crear) {
     if (!crear) return null;
     s = {
       sid,
-      title: texto(ev.title) || texto(ev.src) || sid,
+      title: textoCorto(ev.title, 40) || texto(ev.src) || sid,
       src: texto(ev.src),
       project: texto(ev.project),
       estado: 'activo',
@@ -86,7 +96,7 @@ function sesionDe(ev, crear) {
     };
     estadoEventos.set(sid, s);
   }
-  if (texto(ev.title)) s.title = texto(ev.title);
+  if (textoCorto(ev.title, 40)) s.title = textoCorto(ev.title, 40);
   if (texto(ev.src)) s.src = texto(ev.src);
   if (texto(ev.project)) s.project = texto(ev.project);
   if (texto(ev.ts)) s.actividad = texto(ev.ts);
@@ -106,6 +116,12 @@ function aplicar(ev) {
     if (s.estado === 'terminado') { s.estado = 'activo'; s.fin = null; }
     s.pasos += 1;
     if (texto(ev.tool)) s.tool = texto(ev.tool);
+    // `kraken emit --step N --total M` manda session.step: sin esto el
+    // progreso del plan del CLI se perdía y el panel nunca mostraba el %.
+    if (numero(ev.step) !== null) {
+      s.paso = numero(ev.step);
+      s.total = numero(ev.total);
+    }
   } else if (ev.kind === 'session.end') {
     s.estado = 'terminado';
     s.fin = texto(ev.ts) || new Date().toISOString();
@@ -311,6 +327,11 @@ function armarBase() {
 let ultimoHash = null;
 let ultimoSnapshot = null;
 let ultimoCambio = 0;
+// Nadie mirando: el tick no relee las fuentes. El JSONL se sigue leyendo por
+// bombear() y el snapshot se rearma cuando alguien vuelve a pedirlo.
+let ultimaPeticion = 0;
+let desfasado = false;
+const OCIOSO_MS = 60000;
 
 // El hash es la firma del snapshot: si no cambia, no hay nada que empujar.
 // Los minutos cambian con el reloj y no cuentan como cambio.
@@ -344,11 +365,12 @@ function armar() {
 }
 
 function snapshot() {
+  if (!ultimoSnapshot || desfasado) { armar(); desfasado = false; }
   return ultimoSnapshot || armar().snapshot;
 }
 
 function etagActual() {
-  if (!ultimoSnapshot) armar();
+  if (!ultimoSnapshot || desfasado) { armar(); desfasado = false; }
   return ultimoHash;
 }
 
@@ -399,12 +421,20 @@ function empujar(snap) {
 }
 
 function tick() {
+  // Sin nadie mirando no se releen las fuentes: leer la base del IDE y los
+  // transcripts cuesta hundreds de ms por tick y el resultado no lo ve nadie.
+  // El JSONL se sigue bombeando y el snapshot se rearma al primer pedido.
+  if (clientes.size === 0 && Date.now() - ultimaPeticion > OCIOSO_MS) {
+    desfasado = true;
+    return;
+  }
   let r;
   try {
     r = armar();
   } catch {
     return;
   }
+  desfasado = false;
   if (r.cambio) empujar(r.snapshot);
 }
 
@@ -629,6 +659,7 @@ async function manejar(req, res) {
   }
 
   if (ruta === '/api/state') {
+    ultimaPeticion = Date.now();
     const snap = snapshot();
     const cuerpo = JSON.stringify(snap);
     const etag = etagActual();

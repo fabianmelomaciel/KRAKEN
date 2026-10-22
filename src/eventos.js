@@ -9,6 +9,7 @@
 const fs = require('fs');
 const path = require('path');
 const rutas = require('./rutas.js');
+const { redactar } = require('./fuentes.js');
 
 const ARCHIVO = 'events.jsonl';
 const TAMANO_MAX = 5 * 1024 * 1024;
@@ -49,6 +50,16 @@ function lineasEscritas(archivo) {
 const numero = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);
 const texto = (v) => (typeof v === 'string' && v !== '' ? v : null);
 
+// El título de un evento es texto libre: lo manda un plugin, un hook o el
+// `kraken emit` de la línea de comandos. Pasa por el filtro de secretos y por
+// un tope de 40 caracteres: el panel muestra nombres de sesión, no párrafos.
+function textoCorto(v, max) {
+  if (typeof v !== 'string' || v === '') return null;
+  const limpio = redactar(v);
+  if (!limpio) return null;
+  return limpio.length > max ? `${limpio.slice(0, max - 1)}…` : limpio;
+}
+
 // Cuando el JSONL llega a 5 MB se rota: quedan tres copias y el archivo
 // arranca de cero. El servidor detecta el cambio de archivo y resetea el
 // offset, así que no lee basura del que se fue.
@@ -78,7 +89,7 @@ function escribirEvento(ev) {
     kind: ev.kind,
     sid: texto(ev.sid),
     src: texto(ev.src),
-    title: texto(ev.title),
+    title: textoCorto(ev.title, 40),
     tool: texto(ev.tool),
     step: numero(ev.step),
     total: numero(ev.total),

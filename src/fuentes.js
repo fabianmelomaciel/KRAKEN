@@ -17,15 +17,24 @@ const LIMITE_TEXTO = 200;
 const TOP_OPENCODE = 80;
 const TOP_CLAUDE = 40;
 const TTL_CACHE = 24 * 60 * 60 * 1000;
+// techo de memoria para las caches de transcripts: se cae lo más viejo primero
+const MAX_BYTES_CACHE = 48 * 1024 * 1024;
 
 // --- secretos ---------------------------------------------------------------
 // Lo que salga de acá pasa por un filtro: si aparece algo con pinta de
 // credencial, sale tachado.
 
 const SECRETOS = [
-  /sk-[A-Za-z0-9]{20,}/g,
-  /ghp_[A-Za-z0-9]{20,}/g,
+  // sk-, sk-ant-, sk-proj-: el guion parte el patrón corto, así que la
+  // clase [A-Za-z0-9] no alcanzaba a las claves de Anthropic ni de OpenAI
+  /sk-[A-Za-z0-9_\-]{20,}/g,
+  /gh[pousr]_[A-Za-z0-9]{20,}/g,
+  /glpat-[A-Za-z0-9_\-]{20,}/g,
+  /xox[baprs]-[A-Za-z0-9-]{10,}/g,
   /AKIA[0-9A-Z]{16}/g,
+  /AIza[0-9A-Za-z_\-]{35}/g,
+  /hf_[A-Za-z0-9]{20,}/g,
+  /(sk|pk)_(live|test)_[A-Za-z0-9]{16,}/g,
   /-----BEGIN [A-Z ]*PRIVATE KEY/g,
   /Bearer\s+\S{10,}/g,
   /eyJ[\w-]{8,}\.[\w-]{8,}\.[\w-]{8,}/g,
@@ -130,11 +139,30 @@ const cachePartes = new Map();   // session_id -> { tool, estado, bytes, ts, toc
 
 // Las caches se podran: una ficha que hace un día no se tocó no sirve más
 // y la memoria del kraken no tiene por qué crecer con el histórico.
+//
+// El TTL sigue a la ventana de lectura (conf.dias): si la lista mira 30 días
+// y la poda tira a las 24 h, cada transcript viejo se relee entero en cada
+// tick. Y encima hay un techo de bytes: se cae lo más viejo primero.
+function ttlCache() {
+  const dias = Number(permisos().dias) || 0;
+  return Math.max(TTL_CACHE, dias * 24 * 60 * 60 * 1000);
+}
+
 function podar(cache) {
-  const limite = Date.now() - TTL_CACHE;
+  const limite = Date.now() - ttlCache();
+  let bytes = 0;
   for (const [k, v] of cache) {
     const t = v.timeSesion || v.mtime || 0;
-    if (t && t < limite) cache.delete(k);
+    if (t && t < limite) { cache.delete(k); continue; }
+    bytes += v.tamano || v.bytes || 0;
+  }
+  if (bytes <= MAX_BYTES_CACHE) return;
+  const items = [...cache.entries()]
+    .sort((a, b) => (a[1].mtime || a[1].timeSesion || 0) - (b[1].mtime || b[1].timeSesion || 0));
+  for (const [k, v] of items) {
+    if (bytes <= MAX_BYTES_CACHE) break;
+    cache.delete(k);
+    bytes -= v.tamano || v.bytes || 0;
   }
 }
 
