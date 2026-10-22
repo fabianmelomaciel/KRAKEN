@@ -19,7 +19,7 @@
 **Síntesis (aplicar todo esto):**
 - Paquete npm con `bin` (`kraken`), cero dependencias runtime, `engines.node >= 22.13` (la opción `readOnly`
   de `DatabaseSync` es posterior a 22.5), **sin `postinstall`**.
-- Repositorio público nuevo: `kraken`, MIT, en `C:\laragon\www\kraken` (git propio).
+- Repositorio público nuevo: `kraken`, MIT, en `<carpeta>\kraken` (git propio).
 - **El kraken deja de meterse en los IDEs por default.** `kraken install-ide` queda como opt-in (plugin de
   opencode + hooks de Claude Code) para quien quiera la señal exacta de "terminó"; sin eso, el panel dice
   "sin actividad hace Xm" — nunca inventa el fin.
@@ -60,7 +60,7 @@
 - **R9** "Todo lo que hace" = todo metadato permitido, de todas las sesiones visibles. Nunca el texto de
   prompts/respuestas ni `tool.input`/`tool.output` (esa frontera no se toca).
 
-## Estructura del repo nuevo (`C:\laragon\www\kraken`)
+## Estructura del repo nuevo (`<carpeta>\kraken`)
 ```
 package.json          name kraken, bin: {kraken: "bin/kraken.js"}, engines >=22.13, files, sin deps, sin postinstall
 bin/kraken.js          CLI: serve | install-ide | uninstall | autostart [--remove] | emit | doctor
@@ -81,7 +81,7 @@ README.md  README.en.md  LICENSE  .gitignore
 ```
 
 ## Migración desde SkillGrid
-- El código **se mueve** (no se copia) desde `C:\laragon\www\SkillGrid\scratch\kraken\` al repo nuevo.
+- El código **se mueve** (no se copia) desde `<carpeta>\SkillGrid\scratch\kraken\` al repo nuevo.
 - En SkillGrid queda `tests/kraken-dev-only.test.js`, **adaptado**: ahora verifica que el kraken NO está en
   `package.json.files`, que `install-core.js` no lo copia y que el paquete npm no lo incluye (el kraken ya
   no vive en SkillGrid).

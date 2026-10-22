@@ -26,7 +26,7 @@ Los hooks de Claude Code sí escriben al JSONL al instante, por eso se ve Claude
 ## LA LLAVE: los IDEs guardan todo, no hace falta instrumentarlos
 Verificado en esta máquina con sondas (`scratch/probe-db.js`, `scratch/probe-db2.js`):
 
-### opencode — `C:\Users\fabia\.local\share\opencode\opencode.db` (SQLite, 741 sesiones, 30k mensajes, 139k parts)
+### opencode — `<home>\.local\share\opencode\opencode.db` (SQLite, 741 sesiones, 30k mensajes, 139k parts)
 Node 24 trae `node:sqlite` → cero dependencias. Tablas y campos útiles:
 - `session`: `id`, **`parent_id`** (subagente), `title`, `slug`, `directory`, `version`, `agent` (build/general/plan),
   `model` (JSON `{id, providerID, variant}`), `cost`, `tokens_input`, `tokens_output`, `tokens_reasoning`,
@@ -37,7 +37,7 @@ Node 24 trae `node:sqlite` → cero dependencias. Tablas y campos útiles:
 - `todo`: `session_id`, `content`, `status` (pending/completed), `priority`, `position` → **el % real de la sesión**.
 - `project` (12) y `project_directory` (18): todos los proyectos de la máquina.
 
-### Claude Code — `C:\Users\fabia\.claude\projects\<proyecto-codificado>\<sesion>.jsonl` (24 proyectos)
+### Claude Code — `<home>\.claude\projects\<proyecto-codificado>\<sesion>.jsonl` (24 proyectos)
 Cada línea es un evento JSON. Campos verificados:
 - `type` (user/assistant/system/queue-operation), `sessionId`, `cwd`, `gitBranch`, `version`, `uuid`, `parentUuid`, `timestamp`.
 - `isSidechain`: **true = subagente**.

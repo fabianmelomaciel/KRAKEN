@@ -4,9 +4,9 @@
 
 ### The live panel for your coding agents. · El panel en vivo de tus agentes de código.
 
-[![npm](https://img.shields.io/badge/npm-@fabianmelomaciel%2Fkraken-b6f36b?style=flat-square&color=0a1206&logo=npm)](https://www.npmjs.com/package/@fabianmelomaciel/kraken)
-[![License: MIT](https://img.shields.io/badge/license-MIT-b6f36b?style=flat-square&color=0a1206&logo=github)](LICENSE)
-[![Node](https://img.shields.io/badge/node-22.13%2B-b6f36b?style=flat-square&color=0a1206&logo=node.js)](https://nodejs.org)
+[![npm](https://img.shields.io/badge/npm-@fabianmelomaciel%2Fkraken-ff4d94?style=flat-square&color=07070b&logo=npm)](https://www.npmjs.com/package/@fabianmelomaciel/kraken)
+[![License: MIT](https://img.shields.io/badge/license-MIT-ff4d94?style=flat-square&color=07070b&logo=github)](LICENSE)
+[![Node](https://img.shields.io/badge/node-22.13%2B-ff4d94?style=flat-square&color=07070b&logo=node.js)](https://nodejs.org)
 
 <img src="assets/hero-kraken.svg" width="900" alt="Kraken: el panel en vivo de tus agentes de codigo" />
 
@@ -203,9 +203,6 @@ know — the ones you actually work in — and nothing else. To narrow it down,
 write `permisos.json` in the config folder with the roots you want (an empty
 list denies everything):
 
-By default the allowlist is **your home directory**: what lives under it is
-shown, nothing else. To tune it, write `permisos.json` in the config folder:
-
 | OS | Path |
 | --- | --- |
 | Windows | `%APPDATA%\Kraken\permisos.json` |
@@ -254,6 +251,20 @@ there.
 - The product name and the labels come in Spanish, English and Portuguese,
   with autodetection (`navigator.language`), `?lang=` and a selector in the
   bar.
+- The **tape** on top carries the numbers of the snapshot (live sessions,
+  tokens, tools, projects) and a `live` badge.
+- The **orbit** shows up to 24 live sessions as cards: project, tool and
+  state. In portrait they become a grid of chips so none of them gets cut.
+- **Live verdicts** is the feed of what changed between one snapshot and the
+  next: the tool that ran, the plan progress, the closing. Never the text of
+  a prompt, never the text of a task.
+- **Where the number lands** splits the tools by their real denominator: with
+  no denominator, the section does not show up.
+- The **Pause** button freezes the render in the browser. It does not cut the
+  stream and nothing goes out to the network: the state lives in the
+  `localStorage`.
+- The six metrics carry their sparkline: the history lives in the browser, the
+  server does not keep a second of data just to draw it.
 
 ![The panel in portrait](docs/img/kraken-portrait.png)
 

@@ -14,8 +14,8 @@ const SALIDA = path.join(RAIZ, 'docs', 'img');
 const PUERTO = 51998;
 
 const FOTOS = [
-  { nombre: 'kraken-desktop.png', ancho: 1600, alto: 1000 },
-  { nombre: 'kraken-portrait.png', ancho: 430, alto: 930 },
+  { nombre: 'kraken-desktop.png', ancho: 1600, alto: 1680 },
+  { nombre: 'kraken-portrait.png', ancho: 430, alto: 1200 },
 ];
 
 function navegador() {
@@ -47,14 +47,20 @@ function fixture() {
   const raiz = fs.mkdtempSync(path.join(os.tmpdir(), 'kraken-capturas-'));
   const estado = path.join(raiz, 'estado');
   const config = path.join(raiz, 'config');
-  const proyecto = path.join(raiz, 'proyectos', 'tienda-web');
-  const claude = path.join(raiz, 'claude', 'tienda-web');
+  const base = path.join(raiz, 'proyectos');
+  const proyectos = {
+    tienda: path.join(base, 'tienda-web'),
+    pagos: path.join(base, 'api-pagos'),
+    panel: path.join(base, 'panel-interno'),
+  };
+  const claude = path.join(raiz, 'claude', 'panel-interno');
   const opencode = path.join(raiz, 'opencode');
-  for (const d of [estado, config, path.dirname(proyecto), claude, opencode]) fs.mkdirSync(d, { recursive: true });
+  const dirs = [estado, config, base, claude, opencode, ...Object.values(proyectos)];
+  for (const d of dirs) fs.mkdirSync(d, { recursive: true });
 
   fs.writeFileSync(
     path.join(config, 'permisos.json'),
-    `${JSON.stringify({ raices: [path.dirname(proyecto)], dias: 30, nivel: 'metadata' }, null, 2)}\n`,
+    `${JSON.stringify({ raices: [base], dias: 30, nivel: 'metadata' }, null, 2)}\n`,
   );
 
   const ahora = Date.now();
@@ -63,42 +69,48 @@ function fixture() {
   let seq = 0;
   const agrega = (o) => { seq += 1; lineas.push(JSON.stringify({ v: 1, seq, ...o })); };
 
+  // Tres agentes, tres proyectos y tres tools distintas: la órbita y la
+  // columna de proyectos se entienden mejor que con cinco fichas iguales.
   const agentes = [
-    { titulo: 'agente-ideas', modelo: 'claude-sonnet', tool: 'read' },
-    { titulo: 'agente-devops', modelo: 'gpt-5-codex', tool: 'bash' },
-    { titulo: 'agente-ideas', modelo: 'claude-opus', tool: 'edit' },
+    { titulo: 'agente-ideas', proyecto: proyectos.tienda, tool: 'read', siguiente: 'grep', paso: 2, total: 4 },
+    { titulo: 'agente-devops', proyecto: proyectos.pagos, tool: 'bash', siguiente: 'edit', paso: 3, total: 5 },
+    { titulo: 'agente-marketing', proyecto: proyectos.panel, tool: 'write', siguiente: 'read', paso: 1, total: 3 },
   ];
   agentes.forEach((a, i) => {
     const sid = `ses-demo-${i + 1}`;
-    agrega({ ts: hace(24 - i * 3), kind: 'session.start', sid, src: 'opencode', title: a.titulo, project: proyecto });
-    agrega({ ts: hace(23 - i * 3), kind: 'session.step', sid, src: 'opencode', title: a.titulo, tool: a.tool, project: proyecto });
-    agrega({ ts: hace(22 - i * 3), kind: 'session.step', sid, src: 'opencode', title: a.titulo, tool: 'grep', project: proyecto });
+    agrega({ ts: hace(24 - i * 3), kind: 'session.start', sid, src: 'opencode', title: a.titulo, project: a.proyecto, step: a.paso, total: a.total });
+    agrega({ ts: hace(23 - i * 3), kind: 'session.step', sid, src: 'opencode', title: a.titulo, tool: a.tool, project: a.proyecto, step: a.paso, total: a.total });
+    agrega({ ts: hace(22 - i * 3), kind: 'session.step', sid, src: 'opencode', title: a.titulo, tool: a.siguiente, project: a.proyecto, step: a.paso, total: a.total });
   });
   // dos sesiones terminadas, para que se vea la sección de terminadas
-  for (let i = 1; i <= 2; i++) {
-    const sid = `ses-demo-terminada-${i}`;
-    agrega({ ts: hace(120 - i), kind: 'session.start', sid, src: 'opencode', title: 'agente-devops', project: proyecto });
-    agrega({ ts: hace(118 - i), kind: 'session.step', sid, src: 'opencode', title: 'agente-devops', tool: 'read', project: proyecto });
-    agrega({ ts: hace(115 - i), kind: 'session.end', sid, src: 'opencode', title: 'agente-devops', project: proyecto });
-  }
+  const cerradas = [
+    { titulo: 'agente-devops', proyecto: proyectos.tienda, paso: 4, total: 5 },
+    { titulo: 'agente-marketing', proyecto: proyectos.pagos, paso: 3, total: 3 },
+  ];
+  cerradas.forEach((c, i) => {
+    const sid = `ses-demo-terminada-${i + 1}`;
+    agrega({ ts: hace(120 - i), kind: 'session.start', sid, src: 'opencode', title: c.titulo, project: c.proyecto, step: c.paso, total: c.total });
+    agrega({ ts: hace(118 - i), kind: 'session.step', sid, src: 'opencode', title: c.titulo, tool: 'read', project: c.proyecto, step: c.paso, total: c.total });
+    agrega({ ts: hace(115 - i), kind: 'session.end', sid, src: 'opencode', title: c.titulo, project: c.proyecto, step: c.paso, total: c.total });
+  });
   fs.writeFileSync(path.join(estado, 'events.jsonl'), `${lineas.join('\n')}\n`);
 
   // un transcript de Claude Code, también inventado
   const transcript = [
-    { type: 'user', sessionId: 'ses-claude-demo', cwd: proyecto, timestamp: hace(6), message: { role: 'user', content: [{ type: 'text', text: 'fixture' }] } },
-    { type: 'assistant', sessionId: 'ses-claude-demo', cwd: proyecto, timestamp: hace(5), message: { role: 'assistant', model: 'claude-sonnet-4', content: [{ type: 'tool_use', id: 't1', name: 'write', input: {} }], usage: { input_tokens: 4200, output_tokens: 810, cache_read_input_tokens: 12000 } } },
+    { type: 'user', sessionId: 'ses-claude-demo', cwd: proyectos.panel, timestamp: hace(6), message: { role: 'user', content: [{ type: 'text', text: 'fixture' }] } },
+    { type: 'assistant', sessionId: 'ses-claude-demo', cwd: proyectos.panel, timestamp: hace(5), message: { role: 'assistant', model: 'claude-sonnet-4', content: [{ type: 'tool_use', id: 't1', name: 'write', input: {} }], usage: { input_tokens: 4200, output_tokens: 810, cache_read_input_tokens: 12000 } } },
   ];
   fs.writeFileSync(
     path.join(claude, 'ses-claude-demo.jsonl'),
     `${transcript.map((l) => JSON.stringify(l)).join('\n')}\n`,
   );
 
-  baseOpencode(opencode, proyecto, ahora);
+  baseOpencode(opencode, proyectos, ahora);
   return { raiz, estado, config, opencode, claude };
 }
 
 // una base de opencode de mentira, con el mismo esquema que la real
-function baseOpencode(dir, proyecto, ahora) {
+function baseOpencode(dir, proyectos, ahora) {
   let sqlite;
   try { sqlite = require('node:sqlite'); } catch { return false; }
   const archivo = path.join(dir, 'opencode.db');
@@ -120,13 +132,13 @@ function baseOpencode(dir, proyecto, ahora) {
     const todo = db.prepare(`insert into todo values (?,?,?,?,?,?)`);
 
     const filas = [
-      ['ses-oc-1', 'reformatear el checkout', 'claude', 'anthropic/claude-sonnet-4', 0.0842, 18200, 2400, 900, 41000, 12000, 312, 88, 5],
-      ['ses-oc-2', 'migrar la base de datos', 'gpt-5', 'openai/gpt-5-codex', 0.0511, 9900, 1800, 1200, 22000, 6000, 120, 30, 3],
+      ['ses-oc-1', 'reformatear el checkout', 'claude', 'anthropic/claude-sonnet-4', 0.0842, 18200, 2400, 900, 41000, 12000, 312, 88, 5, proyectos.tienda],
+      ['ses-oc-2', 'migrar la base de datos', 'gpt-5', 'openai/gpt-5-codex', 0.0511, 9900, 1800, 1200, 22000, 6000, 120, 30, 3, proyectos.pagos],
     ];
     filas.forEach((f, i) => {
       const creado = ahora - (60 - i * 20) * 60000;
       const movido = ahora - (i + 1) * 60000;
-      sesion.run(f[0], null, f[1], proyecto, f[2], JSON.stringify({ id: f[3], providerID: f[3].split('/')[0] }), f[4], f[5], f[6], f[7], f[8], f[9], f[10], f[11], f[12], creado, movido);
+      sesion.run(f[0], null, f[1], f[13], f[2], JSON.stringify({ id: f[3], providerID: f[3].split('/')[0] }), f[4], f[5], f[6], f[7], f[8], f[9], f[10], f[11], f[12], creado, movido);
       const mid = `msg-${f[0]}-1`;
       mensaje.run(mid, f[0], movido - 60000);
       parte.run(`part-${f[0]}-1`, mid, f[0], movido - 60000, JSON.stringify({ type: 'tool', tool: 'edit', state: { status: 'completed', time: { start: movido - 60000, end: movido - 30000 } } }));
@@ -220,6 +232,33 @@ async function capturar(exe, url, destino, ancho, alto) {
     await manda('Page.enable', {}, sesion);
     await manda('Page.navigate', { url }, sesion);
     await new Promise((r) => setTimeout(r, 3000));
+    // Los veredictos son transiciones entre dos snapshots: en modo foto el
+    // panel pide el mismo estado y el feed queda vacío. Acá se pinta un paso
+    // anterior y después el real, así la captura muestra la sección viva.
+    await manda('Runtime.evaluate', {
+      expression: `(async () => {
+        const tk = localStorage.getItem('kraken.token');
+        const s = await (await fetch('/api/state', { headers: { 'X-Kraken-Token': tk } })).json();
+        const a = JSON.parse(JSON.stringify(s));
+        let activos = 0;
+        let cerrada = false;
+        for (const x of a.sesiones) {
+          if (x.estado === 'terminado') {
+            if (!cerrada) { x.estado = 'activo'; cerrada = true; }
+            continue;
+          }
+          if (activos >= 2) continue;
+          if (x.tool) x.tool.nombre = x.tool.nombre === 'read' ? 'edit' : 'read';
+          if (x.checklist) x.checklist.hechos = Math.max(0, (x.checklist.hechos || 1) - 1);
+          x.pasos = Math.max(0, (x.pasos || 1) - 1);
+          activos += 1;
+        }
+        VisorPanel.pintar(a);
+        VisorPanel.pintar(s);
+      })()`,
+      awaitPromise: true,
+    }, sesion);
+    await new Promise((r) => setTimeout(r, 300));
     const foto = await manda('Page.captureScreenshot', { format: 'png' }, sesion);
     if (!foto.result || !foto.result.data) throw new Error('el navegador no devolvió la imagen');
     fs.writeFileSync(destino, Buffer.from(foto.result.data, 'base64'));

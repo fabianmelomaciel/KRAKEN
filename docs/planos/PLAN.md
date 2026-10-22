@@ -12,7 +12,7 @@ nunca copiado a ningún IDE. R6 sale por construcción, sin tocar `.gitignore` (
 
 El **estado** va aparte, en `%LOCALAPPDATA%\SkillGrid\live\events.jsonl`: global para que el
 panel sirva para cualquier proyecto y sea "independiente del proyecto", y fuera de
-`C:\laragon\www` (que es legible por otros usuarios de la máquina).
+`<carpeta del repo>` (que es legible por otros usuarios de la máquina).
 
 ## 1. Formato de evento (JSONL, append-only, una línea por evento)
 

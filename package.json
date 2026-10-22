@@ -6,11 +6,11 @@
   "author": "Fabian Melomaciel",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fabianmelacomiel/kraken.git"
+    "url": "git+https://github.com/fabianmelomaciel/kraken.git"
   },
-  "homepage": "https://github.com/fabianmelacomiel/kraken#readme",
+  "homepage": "https://github.com/fabianmelomaciel/kraken#readme",
   "bugs": {
-    "url": "https://github.com/fabianmelacomiel/kraken/issues"
+    "url": "https://github.com/fabianmelomaciel/kraken/issues"
   },
   "keywords": [
     "opencode",

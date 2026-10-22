@@ -4,9 +4,9 @@
 
 ### El panel en vivo de tus agentes de código. · Live panel for your coding agents.
 
-[![npm](https://img.shields.io/badge/npm-@fabianmelomaciel%2Fkraken-b6f36b?style=flat-square&color=0a1206&logo=npm)](https://www.npmjs.com/package/@fabianmelomaciel/kraken)
-[![License: MIT](https://img.shields.io/badge/license-MIT-b6f36b?style=flat-square&color=0a1206&logo=github)](LICENSE)
-[![Node](https://img.shields.io/badge/node-22.13%2B-b6f36b?style=flat-square&color=0a1206&logo=node.js)](https://nodejs.org)
+[![npm](https://img.shields.io/badge/npm-@fabianmelomaciel%2Fkraken-ff4d94?style=flat-square&color=07070b&logo=npm)](https://www.npmjs.com/package/@fabianmelomaciel/kraken)
+[![License: MIT](https://img.shields.io/badge/license-MIT-ff4d94?style=flat-square&color=07070b&logo=github)](LICENSE)
+[![Node](https://img.shields.io/badge/node-22.13%2B-ff4d94?style=flat-square&color=07070b&logo=node.js)](https://nodejs.org)
 
 <img src="assets/hero-kraken.svg" width="900" alt="Kraken: el panel en vivo de tus agentes de codigo" />
 
@@ -250,6 +250,20 @@ raíces que querés (una lista vacía deniega todo):
 - En portrait es una sola columna, sin scroll horizontal.
 - El nombre del producto y los textos vienen en español, inglés y portugués,
   con autodetección (`navigator.language`), `?lang=` y un selector en la barra.
+- La **cinta** de arriba lleva los números del snapshot (sesiones vivas,
+  tokens, herramientas, proyectos) y un distintivo `en vivo`.
+- La **órbita** muestra hasta 24 sesiones vivas como fichas: proyecto, tool y
+  estado. En portrait pasan a una grilla de fichas para que ninguna quede
+  cortada.
+- **Veredictos en vivo** es el feed de lo que cambió entre un snapshot y el
+  siguiente: la tool que corrió, el avance del plan, el cierre. Nunca el
+  texto de un prompt ni el de una tarea.
+- **Dónde cae el número** reparte las herramientas con su denominador real:
+  si no hay denominador, la sección no aparece.
+- El botón **Pausa** congela el render en el navegador. No corta el stream y
+  no sale nada a la red: el estado vive en el `localStorage`.
+- Las seis métricas llevan su chispa: el histórico vive en el navegador, el
+  servidor no guarda una segunda de datos para dibujarla.
 
 ![El panel en portrait](docs/img/kraken-portrait.png)
 
